@@ -1,0 +1,1049 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Gallery</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+
+</head>
+
+<style>
+    body,
+    html {
+        margin: 0;
+        padding: 0;
+        font-family: Arial, sans-serif;
+        height: 100%;
+        overflow: hidden;
+    }
+
+    .navbar {
+        background-color: #f8f8f8;
+        color: #333;
+        display: flex;
+        justify-content: space-between;
+        padding: 10px 20px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        margin-bottom: 5px;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        z-index: 1030;
+    }
+
+    .nav-logo a,
+    .nav-links a {
+        color: #333;
+        text-decoration: none;
+        margin: 0 15px;
+        font-size: 18px;
+    }
+
+    .nav-links a:hover {
+        color: #555;
+    }
+
+    .container {
+        display: flex;
+        height: calc(100vh - 50px);
+        /* Adjust height based on navbar height */
+    }
+
+    #sidebar {
+        position: fixed;
+        top: 80px;
+        left: 0;
+        width: 300px;
+        height: 100%;
+    }
+
+    .selector {
+        width: 100%;
+        padding: 10px;
+        margin-bottom: 20px;
+    }
+
+    #imageGallery {
+        position: absolute;
+        top: 160px;
+        left: 300px;
+        width: calc(100% - 275px);
+        height: calc(100% - 200px);
+        overflow-y: auto;
+        background-color: #ffffff;
+        display: flex;
+    }
+
+    #galleryInfo {
+        position: absolute;
+        top: 80px;
+        left: 300px;
+        width: calc(100% - 275px);
+        background-color: #ffffff;
+        padding: 10px;
+    }
+
+    .d-flex {
+        display: flex !important;
+        flex-wrap: wrap;
+    }
+
+    .ms-2 {
+        margin-left: 10px;
+        margin-right: 3.0rem !important;
+    }
+
+    .gallery img {
+        margin: 10px;
+        width: 200px;
+        height: auto;
+        border-radius: 8px;
+        transition: transform 0.2s ease-in-out;
+
+    }
+
+
+    .card {
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        transition: box-shadow 0.3s ease;
+    }
+
+    .card:hover {
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+    }
+
+
+    .gallery img:hover {
+        transform: scale(1.05);
+    }
+
+    .footer {
+        background: #f8f8f8;
+        padding: 10px 0;
+        position: fixed;
+        left: 0;
+        bottom: 0;
+        width: 100%;
+        text-align: center;
+        box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .footer .btn-link {
+        color: #333;
+        text-decoration: none;
+    }
+
+    .footer .card {
+        width: auto;
+    }
+
+    .card-body {
+        font-size: 0.9rem;
+        padding: 8px;
+    }
+
+    nav ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        display: flex;
+        align-items: center;
+    }
+
+    nav ul li {
+        position: relative;
+        margin-right: 20px;
+    }
+
+    nav ul li a {
+        text-decoration: none;
+        color: black;
+        display: block;
+        padding: 5px;
+    }
+
+    .submenu {
+        display: none;
+        position: absolute;
+        background-color: white;
+        border-radius: 5px;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        width: auto;
+        z-index: 1000;
+    }
+
+    nav ul li:hover .submenu {
+        display: block;
+        /* Show submenu on hover */
+    }
+
+    .submenu a {
+        display: block;
+        padding: 10px;
+        border-bottom: 1px solid #ccc;
+        color: black;
+        text-decoration: none;
+    }
+
+    .submenu a:hover {
+        background-color: #f9f9f9;
+    }
+
+    .submenu a:last-child {
+        border-bottom: none;
+    }
+
+    #imageGallery.single-plot {
+        justify-content: flex-start;
+    }
+
+    .breadcrumb {
+        padding: 8px 15px;
+        margin-bottom: 0;
+        background-color: #f8f9fa;
+        /* Light grey background */
+        border-radius: 0.25rem;
+        list-style-type: none;
+        display: flex;
+    }
+
+    .breadcrumb-item {
+        display: inline;
+    }
+
+    .breadcrumb-item:first-child::before {
+        content: none;
+        /* No content for the first item */
+    }
+
+    .breadcrumb-item+.breadcrumb-item::after {
+        content: "/";
+        /* Custom separator */
+        padding: 0 5px;
+        color: #6c757d;
+        /* Bootstrap's default secondary text color */
+        display: inline;
+    }
+
+    .breadcrumb-item a {
+        text-decoration: none;
+    }
+
+    .breadcrumb-item.active a {
+        color: #6c757d;
+        /* Bootstrap's default secondary text color */
+        pointer-events: none;
+        /* Makes the link non-clickable */
+        cursor: default;
+    }
+
+    .modal {
+        display: none;
+        /* Hidden by default */
+        position: fixed;
+        /* Stay in place */
+        z-index: 20;
+        /* Sit on top */
+        left: 0;
+        width: 100%;
+        /* Full width */
+        height: 100%;
+        /* Full height */
+        overflow: auto;
+        /* Enable scroll if needed */
+        background-color: rgba(0, 0, 0, 0.4);
+        /* Black w/ opacity */
+    }
+
+    .modal-content {
+        position: relative;
+        top: 30px;
+        background-color: #fefefe;
+        margin: 10% auto;
+        /* 10% from the top and centered */
+        padding: 50px;
+        padding-top: 100px;
+        padding-bottom: 100px;
+        border: 1px solid #888;
+        width: 100%;
+        /* Could be more or less, depending on screen size */
+    }
+
+    .close {
+        position: absolute;
+        color: #aaa;
+        right: 30px;
+        font-size: 28px;
+        cursor: pointer;
+    }
+
+    input[type="text"],
+    input[type="email"],
+    input[type="file"],
+    textarea {
+        width: 60%;
+        padding: 12px;
+        margin: 8px 0;
+        display: inline-block;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        box-sizing: border-box;
+    }
+
+    input[type="submit"] {
+        width: 60%;
+        background-color: black;
+        color: white;
+        padding: 14px 20px;
+        margin: 8px 0;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+
+    input[type="submit"]:hover {
+        background-color: gray;
+    }
+
+    .modal-tabs {
+        overflow: hidden;
+        border-radius: 8px;
+        background-color: rgb(247, 247, 247);
+        padding: 10px;
+        width: 260px;
+    }
+
+    .tablink {
+        background-color: inherit;
+        border-radius: 8px;
+        float: left;
+        border: none;
+        outline: none;
+        cursor: pointer;
+        padding: 14px 16px;
+        transition: 0.3s;
+        font-size: 17px;
+    }
+
+    .tablink:hover {
+        background-color: #ddd;
+    }
+
+    /* Active tab style */
+    .tablink.active {
+        background-color: white;
+        /* Light grey background for the active tab */
+    }
+
+    #formHeaderContact {
+        font-weight: 900;
+        margin-top: 80px;
+        padding: 10px;
+    }
+
+    #formHeaderAddPlot {
+        font-weight: 900;
+        margin-top: 80px;
+        padding: 10px;
+    }
+
+    #searchBar {
+        margin: 0;
+    }
+
+    .btn-custom {
+        background-color: black;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        padding: 10px 15px;
+    }
+
+    .about-section {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 20rem;
+        padding-left: 10px;
+    }
+
+    .about-section img {
+        max-width: 100%;
+        height: auto;
+        border-radius: 8px;
+        margin-top: 35px;
+        padding: 20px;
+    }
+
+    .about-section h1 {
+        font-weight: bold;
+        font-size: 4rem;
+    }
+
+    /*make first p section have gray font color*/
+    .about-section p:first-of-type {
+        color: gray;
+    }
+
+    .about-section p {
+        font-size: 1.3rem;
+    }
+
+
+    .col-md-6 {
+        padding-left: 40px;
+    }
+</style>
+
+<body>
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#"><img src="./EPIC-logo_black_transparent.png" alt="epic logo" width="75px"
+                    height="auto"></a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link active" aria-current="page" id="homeLink" href="#home">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" id="physicsLink">Physics</a>
+                        <div id="physicsSubmenu" class="submenu"></div>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" id="detectorLink">Detector</a>
+                        <div id="detectorSubmenu" class="submenu"></div>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" id="reconstructionLink">Reconstruction</a>
+                        <div id="reconstructionSubmenu" class="submenu"></div>
+                    </li>
+                    <li>
+                        <a class="nav-link" href="#" id="ciLink">CI</a>
+                        <div id="ciSubmenu" class="submenu"></div>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" disabled>TDR</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class=" btn-custom" href="mailto:roark@jlab.org" id="contactLink">Contact</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <!--<span class="close">&times;</span>-->
+            <div class="modal-tabs">
+                <button class="tablink" onclick="openForm(event, 'Contact')">Contact</button>
+                <button class="tablink" onclick="openForm(event, 'AddPlot')">Add a new plot</button>
+            </div>
+            <div id="Contact" class="tabcontent">
+                <div id="formHeaderContact">
+                    <h2>Contact</h2>
+                </div>
+                <form id="contactForm" method="POST">
+                    <input type="text" id="firstName" name="firstName" placeholder="First name" required><br>
+                    <input type="text" id="lastName" name="lastName" placeholder="Last name" required><br>
+                    <input type="email" id="email" name="email" placeholder="Email address" required><br>
+                    <textarea id="message" name="message" placeholder="Your message" required></textarea><br>
+                    <input type="submit" value="Submit">
+                </form>
+            </div>
+            <div id="AddPlot" class="tabcontent">
+                <div id="formHeaderAddPlot">
+                    <h2>Add a new plot type</h2>
+                </div>
+                <div id="reminder">
+                    <p>Macros/Scripts should generate .png files for images. </p>
+                </div>
+                <form id="addPlotForm">
+                    <input type="text" id="name" name="name" placeholder="Your Name" required><br>
+                    <input type="text" id="workingGroup" name="workingGroup" placeholder="Working Group" required><br>
+                    <input type="text" id="plotName" name="plotName" placeholder="Name of Plot" required><br>
+                    <textarea id="description" name="description" placeholder="Brief description of the plot"
+                        required></textarea><br>
+                    <textarea id="instructions" name="instructions" placeholder="Special instructions for running?"
+                        required></textarea><br>
+                    <input type="file" id="plotFile" name="plotFile[]" multiple required><br>
+                    <input type="submit" value="Submit">
+                </form>
+            </div>
+        </div>
+    </div>
+
+
+    <div id="dynamicContent"></div>
+    <footer class="footer">
+        <p><i class="fa-solid fa-triangle-exclamation"></i> Plots on this page are automatically generated and are not
+            approved for use in presentations or other documents. </p>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>
+
+<script>
+
+    document.addEventListener('DOMContentLoaded', function () {
+        populateSubmenus();
+
+        document.getElementById('homeLink').addEventListener('click', function (e) {
+            e.preventDefault(); // Prevent default link behavior
+            loadHomePage();
+        });
+
+        // Load home page content by default
+        loadHomePage();
+
+        document.getElementById("physicsSubmenu").addEventListener("click", function (e) {
+            var plotGroup = e.target.getAttribute("data-plotgroup-id");
+            console.log('the selected plot group is: ', plotGroup)
+            if (plotGroup) {
+                updatePlotTypes(plotGroup);
+            }
+        });
+
+        document.getElementById("detectorSubmenu").addEventListener("click", function (e) {
+            var plotGroup = e.target.getAttribute("data-plotgroup-id");
+            console.log('the selected plot group is: ', plotGroup)
+            if (plotGroup) {
+                updatePlotTypes(plotGroup);
+            }
+        });
+
+        document.getElementById("reconstructionSubmenu").addEventListener("click", function (e) {
+            var plotGroup = e.target.getAttribute("data-plotgroup-id");
+            console.log('the selected plot group is: ', plotGroup)
+            if (plotGroup) {
+                updatePlotTypes(plotGroup);
+            }
+        });
+
+        // Attach event listeners to submenu links
+        document.getElementById('physicsSubmenu').addEventListener('click', function (e) {
+            if (e.target.tagName === 'A') {
+                loadOriginalContent();
+            }
+        });
+
+        document.getElementById('detectorSubmenu').addEventListener('click', function (e) {
+            if (e.target.tagName === 'A') {
+                loadOriginalContent();
+            }
+        });
+
+        document.getElementById('reconstructionSubmenu').addEventListener('click', function (e) {
+            if (e.target.tagName === 'A') {
+                loadOriginalContent();
+            }
+        });
+
+        document.getElementById('ciSubmenu').addEventListener('click', function (e) {
+            if (e.target.tagName === 'A') {
+                loadOriginalContent();
+            }
+        });
+    });
+
+    const filterConfig = {
+        "BSM and Precision EW": ["campaign", "plotType"],
+        "Exclusive Diffraction and Tagging": ["campaign", "plotType"],
+        "Inclusive": ["campaign", "plotType"],
+        "Jets and Heavy Flavor": ["campaign", "plotType", "geometry", "energy", "minQ2"],
+        "Semi-Inclusive": ["campaign", "plotType"]
+    };
+    
+
+
+    function updateImageGallery() {
+        var campaignSelect = document.getElementById("campaignSelect");
+        var plotTypeSelect = document.getElementById("plotTypeSelect");
+        var energySelect = document.getElementById("energySelect");
+        var minQ2Select = document.getElementById("minQ2Select");
+    
+        var campaigns = Array.from(campaignSelect.selectedOptions).map(option => option.value);
+        var plotTypes = Array.from(plotTypeSelect.selectedOptions).map(option => option.value);
+        var energies = Array.from(energySelect.selectedOptions).map(option => option.value);
+        var minQ2s = Array.from(minQ2Select.selectedOptions).map(option => option.value);
+    
+        // Clear current images
+        var imageGallery = document.getElementById('imageGallery');
+        imageGallery.innerHTML = '';
+    
+        // Check if campaigns and plotTypes have values
+        if (campaigns.length === 0 || plotTypes.length === 0) {
+            console.log('No campaigns or plot types selected');
+            return; // Exit function if no selections are made
+        }
+    
+        if (plotTypes.length === 1) {
+            imageGallery.classList.add("single-plot");
+        } else {
+            imageGallery.classList.remove("single-plot");
+        }
+    
+        if (plotTypes.includes('all')) {
+            plotTypes = Array.from(plotTypeSelect.options).map(option => option.value).filter(value => value !== 'all');
+        }
+    
+        // Loop through each plot type and group images from different campaigns
+        plotTypes.forEach(plotType => {
+            console.log('Fetching images for:', plotType);
+            var cardDeckDiv = document.createElement("div");
+            cardDeckDiv.className = "d-flex flex-row mb-4";
+    
+            var header = document.createElement("h3");
+            header.textContent = plotType.replace(".png", "");
+            header.className = "text-center small";
+    
+            // Fetch image paths from the PHP script
+            var promises = campaigns.map(campaign => {
+                return fetch(`/epic/php/images.php?plotName=${plotType}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (!data) {
+                            console.error('No data received from the server for campaign:', campaign);
+                            return [];
+                        }
+                        return data.map(plot => {
+                            if (plot.ImagePath.includes(campaign)) {
+                                const pathParts = plot.ImagePath.split('/');
+                                const campaign = pathParts[5];
+                                const geometry = pathParts[6];
+                                const energy = pathParts[9];
+                                const minQ2 = pathParts[10].split("=")[1];
+    
+                                if ((energies.length === 0 || energies.includes(energy)) &&
+                                (minQ2s.length === 0 || minQ2s.includes(minQ2))) {
+                                    var colDiv = document.createElement("div");
+                                    colDiv.className = "col-md-4";
+                                    colDiv.setAttribute('data-campaign', campaign); // Add data attribute for sorting
+    
+                                    var cardDiv = document.createElement("div");
+                                    cardDiv.className = "card mb-4 mx-2";
+    
+                                    var link = document.createElement("a");
+                                    link.href = plot.ImagePath + plot.PlotTypeName + ".png";
+                                    link.target = "_blank";
+    
+                                    var img = document.createElement("img");
+                                    img.style.paddingTop = "10px";
+                                    img.src = plot.ImagePath + plot.PlotTypeName + ".png";
+                                    img.className = "card-img-top image-item";
+                                    img.alt = plot.PlotTypeName;
+    
+                                    var tooltipText = `path: ${plot.ImagePath}`;
+                                    img.title = tooltipText;
+    
+                                    var cardBodyDiv = document.createElement("div");
+                                    cardBodyDiv.className = "card-body";
+    
+                                    var campaignInfo = document.createElement("p");
+                                    campaignInfo.className = "card-text";
+                                    campaignInfo.innerHTML = `
+                                        Campaign: ${campaign} <br>
+                                        Geometry: ${geometry} <br>
+                                        Energy: ${energy} <br>
+                                        Min Q2: ${minQ2} <br>
+                                    `;
+    
+                                    cardDiv.appendChild(link);
+                                    link.appendChild(img);
+                                    cardBodyDiv.appendChild(campaignInfo);
+                                    cardDiv.appendChild(cardBodyDiv);
+                                    colDiv.appendChild(cardDiv);
+    
+                                    return { minQ2: parseFloat(minQ2), element: colDiv }; // Return object with minQ2 and the DOM element
+                                }
+                                return null;
+                            }
+                            return null;
+                        }).filter(item => item !== null); // Filter out null results
+                    }).catch(error => {
+                        console.error('Error fetching data for campaign:', campaign, error);
+                        return [];
+                    });
+            });
+    
+            // Wait for all image checks to complete
+            Promise.all(promises).then(arrayOfArrays => {
+                const results = arrayOfArrays.flat().filter(result => result !== null); // Flatten and filter out null results
+                results.sort((a, b) => a.minQ2 - b.minQ2); // Sort results by minQ2
+    
+                if (results.length > 0) {
+                    imageGallery.appendChild(header);
+                    results.forEach(result => {
+                        if (result && result.element) {
+                            cardDeckDiv.appendChild(result.element); // Append sorted elements
+                        }
+                    });
+                    imageGallery.appendChild(cardDeckDiv);
+                }
+            }).catch(error => {
+                console.error('Error processing promises:', error);
+            });
+        }); // Closing brace for plotTypes.forEach
+    }
+    
+    
+    function populateSubmenus() {
+                var xmlhttp;
+                if (window.XMLHttpRequest) {
+                    xmlhttp = new XMLHttpRequest();
+                } else {
+                    xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+                }
+
+                xmlhttp.onreadystatechange = function () {
+                    if (this.readyState == 4 && this.status == 200) {
+                        var response = JSON.parse(this.responseText);
+                        var physicsMenu = document.getElementById("physicsSubmenu");
+                        var detectorMenu = document.getElementById("detectorSubmenu");
+                        var reconstructionMenu = document.getElementById("reconstructionSubmenu");
+
+                        response.Physics.forEach(function (item) {
+                            var link = document.createElement("a");
+                            link.href = "#";
+                            link.textContent = item.name;
+                            link.className = "dropdown-item";
+                            link.setAttribute("data-plotgroup-id", item.id)
+                            link.setAttribute("data-toggle", "tooltip");
+                            link.setAttribute("title", "This is a placeholder name!");
+                            physicsMenu.appendChild(link);
+                        });
+
+                        response.Detector.forEach(function (item) {
+                            var link = document.createElement("a");
+                            link.href = "#";
+                            link.textContent = item.name;
+                            link.className = "dropdown-item";
+                            link.setAttribute("data-plotgroup-id", item.id)
+                            link.setAttribute("data-toggle", "tooltip");
+                            link.setAttribute("title", "This is a placeholder name!");
+                            detectorMenu.appendChild(link);
+                        });
+
+                        response.Reconstruction.forEach(function (item) {
+                            var link = document.createElement("a");
+                            link.href = "#";
+                            link.textContent = item.name;
+                            link.className = "dropdown-item";
+                            link.setAttribute("data-plotgroup-id", item.id)
+                            link.setAttribute("data-toggle", "tooltip");
+                            link.setAttribute("title", "This is a placeholder name!");
+                            reconstructionMenu.appendChild(link);
+                        });
+                    }
+                };
+                xmlhttp.open("GET", "./php/get_PlotGroups.php", true);
+                xmlhttp.send();
+            }
+
+    function updatePlotTypes(plotGroupId) {
+                var xmlhttp = new XMLHttpRequest();
+                xmlhttp.onreadystatechange = function () {
+                    if (this.readyState == 4 && this.status == 200) {
+                        var response = JSON.parse(this.responseText);
+                        var plotTypeSelect = document.getElementById("plotTypeSelect");
+                        plotTypeSelect.innerHTML = "";
+
+                        var allOption = document.createElement("option");
+                        allOption.value = "all";
+                        allOption.text = "All";
+                        // make defualt selection
+                        plotTypeSelect.add(allOption);
+
+
+                        response.forEach(function (item) {
+                            var option = document.createElement("option");
+                            option.value = item.Name;
+                            option.text = item.Name;
+                            plotTypeSelect.add(option);
+                        });
+
+                        plotTypeSelect.value = "all";
+                        updateImageGallery();
+                    }
+                };
+                xmlhttp.open("GET", "./php/getPlotTypes.php?plotGroupId=" + plotGroupId, true);
+                xmlhttp.send();
+            }
+
+    function updateImageCount() {
+                const imageCount = document.querySelectorAll('#imageGallery .image-item').length;
+                document.getElementById('imageCount').innerText = imageCount + " Images";
+            }
+
+    function sortImages() {
+                const sortSelect = document.getElementById("sortSelect").value;
+                const cardDecks = document.querySelectorAll('.d-flex.flex-row.mb-4'); // Get all card decks
+
+                console.log(`Sorting ${cardDecks.length} card decks...`);
+
+                cardDecks.forEach(deck => {
+                    let colDivs = Array.from(deck.querySelectorAll('.col-md-4')); // Get all card containers in this deck
+
+                    // Log the unsorted state for debugging
+                    console.log('Unsorted cards:', colDivs.map(div => div.getAttribute('data-campaign')));
+
+                    // Sort the containers based on the campaign data
+                    colDivs.sort((a, b) => {
+                        const campaignA = a.getAttribute('data-campaign').split('.').map(Number);
+                        const campaignB = b.getAttribute('data-campaign').split('.').map(Number);
+                        return (sortSelect === 'Oldest' ? 1 : -1) * (campaignA[0] - campaignB[0] || campaignA[1] - campaignB[1]);
+                    });
+
+                    // Log the sorted state for debugging
+                    console.log('Sorted cards:', colDivs.map(div => div.getAttribute('data-campaign')));
+
+                    // Re-append each container in sorted order
+                    colDivs.forEach(colDiv => deck.appendChild(colDiv));
+                });
+
+                console.log("Sorting complete.");
+            }
+
+    function loadHomePage() {
+                const content = `
+                <div class="container-fluid about-section" style="padding-left: 0; padding-right: 0;">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h1>About</h1>
+                            <p>Goal: Central location to view plots produced from ePIC simulations to assist in visualizing and understanding the integrity of the data and identify missing or unexpected results. These plots should be accessible to everyone in the collaboration.</p>
+                            <p>Designs and prototypes are developed in Figma and deployed using Javascript, HTML, and CSS.</p>
+                            <p>References to the images on this page are stored in a MySQL database. The database tracks the campaign and relevant meta data for each image automatically. Data is fetched from the database using PHP.</p>
+                        </div>
+                        <div class="col-md-6">
+                            <img src="./epic-cutaway-labeled.png" alt="Detector Image">
+                        </div>
+                    </div>
+                </div>
+
+                <footer class="footer">
+                    <p><i class="fa-solid fa-triangle-exclamation"></i> Plots on this page are automatically generated and are not approved for use in presentations or other documents. </p>
+                </footer>
+            `;
+                document.getElementById('dynamicContent').innerHTML = content;
+            }
+
+    function loadOriginalContent() {
+                const content = `<div class="container-fluid" style="padding-left: 0; padding-right: 0;">
+    <div class="row">
+
+        <div class="col-md-4" id="sidebar">
+            <!-- add breadcrumb 
+            <nav aria-label="breadcrumb" id="breadcrumb">
+                <ol class="breadcrumb"></ol>
+            </nav>
+-->
+            <div class="p-3 bg-white">
+
+                <label for="campaignSelect" class="form-label">Campaign</label>
+                <select class="form-select" multiple id="campaignSelect" onchange="updateImageGallery()">
+                    <option value="24.02.0">24.02.0</option>
+                    <option value="24.03.1">24.03.1</option>
+                    <option value="24.04.0">24.04.0</option>
+                    <option value="24.05.0" >24.05.0</option>
+                    <option value="24.06.0" selected>24.06.0</option>
+                </select>
+
+                <label for="plotTypeSelect" class="form-label">Plot Type</label>
+                <select class="form-select" multiple id="plotTypeSelect" onchange="updateImageGallery()">
+                </select>
+                <hr>
+
+                <div class="mb-3">
+                    <button
+                        class="btn btn-toggle w-100 text-start align-items-center justify-content-between d-flex"
+                        type="button" data-bs-toggle="collapse" data-bs-target="#filter1" aria-expanded="false"
+                        aria-controls="filter1">
+                        Geometry <span id="filter1-icon">+</span>
+                    </button>
+                    <div class="collapse" id="filter1">
+                        <select class="form-select" multiple id="geometrySelect onchange="updateImageGallery()">
+                            <option value="epic_craterlake">epic_craterlake</option>
+                        </select>
+                    </div>
+                </div>
+
+                <hr>
+                
+                <div class="mb-3">
+                    <button
+                        class="btn btn-toggle w-100 text-start align-items-center justify-content-between d-flex"
+                        type="button" data-bs-toggle="collapse" data-bs-target="#filter2" aria-expanded="false"
+                        aria-controls="filter2">
+                        Energy <span id="filter2-icon">+</span>
+                    </button>
+                    <div class="collapse" id="filter2">
+                        <select class="form-select" multiple id="energySelect" onchange="updateImageGallery()">
+                            <option value="10x100">10x100</option>
+                            <option value="18x275">18x275</option>
+                            <option value="5x41">5x41</option>
+                        </select>
+                    </div>
+                </div>
+                <hr>
+                <div class="mb-3">
+                    <button
+                        class="btn btn-toggle w-100 text-start align-items-center justify-content-between d-flex"
+                        type="button" data-bs-toggle="collapse" data-bs-target="#filter3" aria-expanded="false"
+                        aria-controls="filter3">
+                        MinQ2 <span id="filter3-icon">+</span>
+                    </button>
+                    <div class="collapse" id="filter3">
+                        
+                        <select class="form-select" multiple id="minQ2Select" onchange="updateImageGallery()">
+                            <option value="1">1</option>
+                            <option value="10">10</option>
+                            <option value="100">100</option>
+                            <option value="1000">1000</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="alert alert-warning alert-dismissible fade show" role="alert" id="alertMessage">
+                    This page is under active development. Some features may not yet be implemented. The images are
+                    also placeholders as the jets.cxx benchmark is out of date.
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            </div>
+        </div>
+ 
+        <div class="col-md-8">
+            <div class="row mb-3 align-items-center" id="galleryInfo">
+                <div class="col-md-4">
+                    <span id="imageCount">Count Images</span>
+                </div>
+                <div class="col-md-8 d-flex justify-content-end">
+                    <div class="input-group" id="searchBar" style="width: 200px;">
+                        <span class="input-group-text"><i class="fas fa-search"></i></span>
+                        <input type="text" id="searchBar" class="form-control" placeholder="Search..."
+                            oninput="filterImages()">
+                    </div>
+                    <select class="form-select ms-2" style="width: 100px;" id="sortSelect">
+                        <option value="default">Sort by</option>
+                        <option value="Newest">Newest</option>
+                        <option value="Oldest">Oldest</option>
+                    </select>
+                </div>
+            </div>
+            <div class="row" id="imageGallery"></div>
+        </div>
+    </div>
+</div>`;
+                document.getElementById('dynamicContent').innerHTML = content;
+                document.getElementById("sortSelect").addEventListener("change", sortImages);
+
+            }
+
+
+            function filterPlotTypeOptions() {
+                var input = document.getElementById("plotTypeSearch").value.toLowerCase();
+                var plotTypeSelect = document.getElementById("plotTypeSelect");
+                var options = plotTypeSelect.options;
+            
+                for (var i = 0; i < options.length; i++) {
+                    var option = options[i];
+                    var optionText = option.text.toLowerCase();
+                    if (optionText.indexOf(input) > -1) {
+                        option.style.display = ""; // Option matches, show it
+                    } else {
+                        option.style.display = "none"; // Option does not match, hide it
+                    }
+                }
+            }
+
+    document.getElementById('contactForm').addEventListener('submit', function (event) {
+                event.preventDefault(); // Prevent the default form submission behavior
+
+                // Gather the form data
+                let formData = new FormData(this);
+
+                // Perform the fetch/AJAX call to send data to the server
+                fetch('./php/contact.php', {
+                    method: 'POST',
+                    body: formData
+                })
+                    .then(response => response.text()) // Convert response to text
+                    .then(text => {
+                        // Display the server's response text on the page
+                        if (text.includes('Thank You!')) {
+                            alert('Thank you for contacting us! Your message has been sent.');
+                        } else {
+                            alert('Oops! Something went wrong.');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('Error sending message.');
+                    });
+            });
+
+        document.getElementById('addPlotForm').addEventListener('submit', function (event) {
+            event.preventDefault(); // Prevent the default form submission behavior
+
+            // Gather the form data
+            let formData = new FormData(this);
+
+            // Perform the fetch/AJAX call to send data to the server
+            fetch('./php/addPlotForm.php', {
+                method: 'POST',
+                body: formData
+            })
+                .then(response => response.text()) // Convert response to text
+                .then(text => {
+                    // Display the server's response text on the page
+                    alert(text)
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error submitting plot type.');
+                });
+        });
+
+        document.getElementById('contactForm').addEventListener('submit', function (event) {
+            if (!this.checkValidity()) {
+                event.preventDefault(); // Prevent form submission
+                alert('Please fill out all required fields.');
+            }
+        });
+
+        document.getElementById('contactLink').addEventListener('click', function (event) {
+            event.preventDefault();
+            document.getElementById('modal').style.display = 'block';
+            document.querySelectorAll('.tablink')[0].click(); // Open the first tab by default
+        });
+
+        window.onclick = function (event) {
+            if (event.target == document.getElementById('modal')) {
+                document.getElementById('modal').style.display = 'none';
+            }
+        }
+
+        function openForm(evt, formName) {
+            var i, tabcontent, tablinks;
+            tabcontent = document.getElementsByClassName("tabcontent");
+            for (i = 0; i < tabcontent.length; i++) {
+                tabcontent[i].style.display = "none";
+            }
+            tablinks = document.getElementsByClassName("tablink");
+            for (i = 0; i < tablinks.length; i++) {
+                tablinks[i].className = tablinks[i].className.replace(" active", "");
+            }
+            document.getElementById(formName).style.display = "block";
+            evt.currentTarget.className += " active";
+        }
+</script>
