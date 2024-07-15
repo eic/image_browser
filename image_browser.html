@@ -416,15 +416,11 @@
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="#" id="physicsLink">Physics</a>
-                        <div id="physicsSubmenu" class="submenu"></div>
+                        <div id="PhysicsSubmenu" class="submenu"></div>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="#" id="detectorLink">Detector</a>
-                        <div id="detectorSubmenu" class="submenu"></div>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#" id="reconstructionLink">Reconstruction</a>
-                        <div id="reconstructionSubmenu" class="submenu"></div>
+                        <div id="DetectorSubmenu" class="submenu"></div>
                     </li>
                     <li>
                         <a class="nav-link" href="#" id="ciLink">CI</a>
@@ -440,6 +436,12 @@
             </div>
         </div>
     </nav>
+
+    <div class="alert alert-warning alert-dismissible fade show" role="alert" id="alertMessage">
+        The database that supports this page is undergoing maintenance. Please check back later today. 
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+
 
     <div id="modal" class="modal">
         <div class="modal-content">
@@ -507,7 +509,7 @@
         // Load home page content by default
         loadHomePage();
 
-        document.getElementById("physicsSubmenu").addEventListener("click", function (e) {
+        document.getElementById("PhysicsSubmenu").addEventListener("click", function (e) {
             var plotGroup = e.target.getAttribute("data-plotgroup-id");
             console.log('the selected plot group is: ', plotGroup)
             if (plotGroup) {
@@ -515,15 +517,7 @@
             }
         });
 
-        document.getElementById("detectorSubmenu").addEventListener("click", function (e) {
-            var plotGroup = e.target.getAttribute("data-plotgroup-id");
-            console.log('the selected plot group is: ', plotGroup)
-            if (plotGroup) {
-                updatePlotTypes(plotGroup);
-            }
-        });
-
-        document.getElementById("reconstructionSubmenu").addEventListener("click", function (e) {
+        document.getElementById("DetectorSubmenu").addEventListener("click", function (e) {
             var plotGroup = e.target.getAttribute("data-plotgroup-id");
             console.log('the selected plot group is: ', plotGroup)
             if (plotGroup) {
@@ -532,19 +526,13 @@
         });
 
         // Attach event listeners to submenu links
-        document.getElementById('physicsSubmenu').addEventListener('click', function (e) {
+        document.getElementById('PhysicsSubmenu').addEventListener('click', function (e) {
             if (e.target.tagName === 'A') {
                 loadOriginalContent();
             }
         });
 
-        document.getElementById('detectorSubmenu').addEventListener('click', function (e) {
-            if (e.target.tagName === 'A') {
-                loadOriginalContent();
-            }
-        });
-
-        document.getElementById('reconstructionSubmenu').addEventListener('click', function (e) {
+        document.getElementById('DetectorSubmenu').addEventListener('click', function (e) {
             if (e.target.tagName === 'A') {
                 loadOriginalContent();
             }
@@ -696,8 +684,52 @@
             });
         }); // Closing brace for plotTypes.forEach
     }
+
+    function populateSubmenus() {
+        var xmlhttp;
+        if (window.XMLHttpRequest) {
+            // code for modern browsers
+            xmlhttp = new XMLHttpRequest();
+        } else {
+            // code for old IE browsers
+            xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+        }
     
+        xmlhttp.onreadystatechange = function () {
+            if (this.readyState == 4 && this.status == 200) {
+                var response = JSON.parse(this.responseText);
     
+                // Clear existing menus if needed
+                document.querySelectorAll('.submenu').forEach(menu => menu.innerHTML = '');
+    
+                // Loop over each supergroup in the response
+                Object.keys(response).forEach(function (superGroupName) {
+                    var menuId = superGroupName+'Submenu'; // create an ID by removing spaces
+                    var menu = document.getElementById(menuId);
+    
+                    // Check if the menu exists, if not, you might want to create it or log an error
+                    if (menu) {
+                        response[superGroupName].forEach(function (item) {
+                            var link = document.createElement("a");
+                            link.href = "#";
+                            link.textContent = item.name;
+                            link.className = "dropdown-item";
+                            link.setAttribute("data-plotgroup-id", item.id);
+                            link.setAttribute("data-toggle", "tooltip");
+                            link.setAttribute("title", "Click to view plots for " + item.name);
+                            menu.appendChild(link);
+                        });
+                    } else {
+                        console.error('Menu for ' + superGroupName + ' not found');
+                    }
+                });
+            }
+        };
+        xmlhttp.open("GET", "./php/get_groups.php", true);
+        xmlhttp.send();
+    }
+    
+    /*
     function populateSubmenus() {
                 var xmlhttp;
                 if (window.XMLHttpRequest) {
@@ -709,9 +741,8 @@
                 xmlhttp.onreadystatechange = function () {
                     if (this.readyState == 4 && this.status == 200) {
                         var response = JSON.parse(this.responseText);
-                        var physicsMenu = document.getElementById("physicsSubmenu");
-                        var detectorMenu = document.getElementById("detectorSubmenu");
-                        var reconstructionMenu = document.getElementById("reconstructionSubmenu");
+                        var physicsMenu = document.getElementById("PhysicsSubmenu");
+                        var detectorMenu = document.getElementById("DetectorSubmenu");
 
                         response.Physics.forEach(function (item) {
                             var link = document.createElement("a");
@@ -734,22 +765,12 @@
                             link.setAttribute("title", "This is a placeholder name!");
                             detectorMenu.appendChild(link);
                         });
-
-                        response.Reconstruction.forEach(function (item) {
-                            var link = document.createElement("a");
-                            link.href = "#";
-                            link.textContent = item.name;
-                            link.className = "dropdown-item";
-                            link.setAttribute("data-plotgroup-id", item.id)
-                            link.setAttribute("data-toggle", "tooltip");
-                            link.setAttribute("title", "This is a placeholder name!");
-                            reconstructionMenu.appendChild(link);
-                        });
                     }
                 };
                 xmlhttp.open("GET", "./php/get_PlotGroups.php", true);
                 xmlhttp.send();
             }
+                */
 
     function updatePlotTypes(plotGroupId) {
                 var xmlhttp = new XMLHttpRequest();
@@ -817,6 +838,12 @@
 
     function loadHomePage() {
                 const content = `
+
+                <div class="alert alert-warning alert-dismissible fade show" role="alert" id="alertMessage">
+                    The database that supports this page is undergoing maintenance. Please check back later today. 
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+
                 <div class="container-fluid about-section" style="padding-left: 0; padding-right: 0;">
                     <div class="row">
                         <div class="col-md-6">
@@ -915,8 +942,7 @@
                 </div>
 
                 <div class="alert alert-warning alert-dismissible fade show" role="alert" id="alertMessage">
-                    This page is under active development. Some features may not yet be implemented. The images are
-                    also placeholders as the jets.cxx benchmark is out of date.
+                    The database that supports this page is undergoing maintenance. Please check back later today. 
                     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                 </div>
             </div>
