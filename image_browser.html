@@ -8,7 +8,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
-
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
 
 <style>
@@ -105,6 +105,19 @@
         border-radius: 8px;
         transition: transform 0.2s ease-in-out;
 
+    }
+
+    .card-text-container {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        /* or use flex-start/flex-end depending on your layout */
+    }
+
+    .card-text {
+        margin: 0;
+        padding-right: 10px;
+        /* Adjust as necessary */
     }
 
 
@@ -398,6 +411,13 @@
     .col-md-6 {
         padding-left: 40px;
     }
+
+    .fa-download {
+        margin-left: 30px;
+        color: gray;
+        vertical-align: bottom;
+        /* Align with the middle of the text */
+    }
 </style>
 
 <body>
@@ -438,7 +458,7 @@
     </nav>
 
     <div class="alert alert-warning alert-dismissible fade show" role="alert" id="alertMessage">
-        The database that supports this page is undergoing maintenance. Please check back later today. 
+        The database that supports this page is undergoing maintenance. Please check back later today.
         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>
 
@@ -552,50 +572,48 @@
         "Jets and Heavy Flavor": ["campaign", "plotType", "geometry", "energy", "minQ2"],
         "Semi-Inclusive": ["campaign", "plotType"]
     };
-    
-
 
     function updateImageGallery() {
         var campaignSelect = document.getElementById("campaignSelect");
         var plotTypeSelect = document.getElementById("plotTypeSelect");
         var energySelect = document.getElementById("energySelect");
         var minQ2Select = document.getElementById("minQ2Select");
-    
+
         var campaigns = Array.from(campaignSelect.selectedOptions).map(option => option.value);
         var plotTypes = Array.from(plotTypeSelect.selectedOptions).map(option => option.value);
         var energies = Array.from(energySelect.selectedOptions).map(option => option.value);
         var minQ2s = Array.from(minQ2Select.selectedOptions).map(option => option.value);
-    
+
         // Clear current images
         var imageGallery = document.getElementById('imageGallery');
         imageGallery.innerHTML = '';
-    
+
         // Check if campaigns and plotTypes have values
         if (campaigns.length === 0 || plotTypes.length === 0) {
             console.log('No campaigns or plot types selected');
             return; // Exit function if no selections are made
         }
-    
+
         if (plotTypes.length === 1) {
             imageGallery.classList.add("single-plot");
         } else {
             imageGallery.classList.remove("single-plot");
         }
-    
+
         if (plotTypes.includes('all')) {
             plotTypes = Array.from(plotTypeSelect.options).map(option => option.value).filter(value => value !== 'all');
         }
-    
+
         // Loop through each plot type and group images from different campaigns
         plotTypes.forEach(plotType => {
             console.log('Fetching images for:', plotType);
             var cardDeckDiv = document.createElement("div");
             cardDeckDiv.className = "d-flex flex-row mb-4";
-    
+
             var header = document.createElement("h3");
             header.textContent = plotType.replace(".png", "");
             header.className = "text-center small";
-    
+
             // Fetch image paths from the PHP script
             var promises = campaigns.map(campaign => {
                 return fetch(`/epic/php/images.php?plotName=${plotType}`)
@@ -612,32 +630,35 @@
                                 const geometry = pathParts[6];
                                 const energy = pathParts[9];
                                 const minQ2 = pathParts[10].split("=")[1];
-    
+
                                 if ((energies.length === 0 || energies.includes(energy)) &&
-                                (minQ2s.length === 0 || minQ2s.includes(minQ2))) {
+                                    (minQ2s.length === 0 || minQ2s.includes(minQ2))) {
                                     var colDiv = document.createElement("div");
                                     colDiv.className = "col-md-4";
                                     colDiv.setAttribute('data-campaign', campaign); // Add data attribute for sorting
-    
+
                                     var cardDiv = document.createElement("div");
                                     cardDiv.className = "card mb-4 mx-2";
-    
+
                                     var link = document.createElement("a");
                                     link.href = plot.ImagePath + plot.PlotTypeName + ".png";
                                     link.target = "_blank";
-    
+
                                     var img = document.createElement("img");
                                     img.style.paddingTop = "10px";
                                     img.src = plot.ImagePath + plot.PlotTypeName + ".png";
                                     img.className = "card-img-top image-item";
                                     img.alt = plot.PlotTypeName;
-    
+
                                     var tooltipText = `path: ${plot.ImagePath}`;
                                     img.title = tooltipText;
-    
+
                                     var cardBodyDiv = document.createElement("div");
                                     cardBodyDiv.className = "card-body";
-    
+
+                                    var cardTextContainer = document.createElement("div");
+                                    cardTextContainer.className = "card-text-container";
+
                                     var campaignInfo = document.createElement("p");
                                     campaignInfo.className = "card-text";
                                     campaignInfo.innerHTML = `
@@ -646,13 +667,36 @@
                                         Energy: ${energy} <br>
                                         Min Q2: ${minQ2} <br>
                                     `;
-    
+
+                                    var downloadIcon = document.createElement("i");
+                                    downloadIcon.className = "fas fa-download";
+                                    downloadIcon.title = "Download Image";
+
+                                    downloadIcon.addEventListener('click', function (event) {
+                                        event.stopPropagation();
+                                        event.preventDefault(); //removing this will download the image AND the card simultaneously
+                                        downloadCardAsPNG(cardDiv, downloadIcon);
+                                    }, { once: true });
+
+
+
+                                    // Create a link for the download icon
+                                    var downloadLink = document.createElement("a");
+                                    downloadLink.href = plot.ImagePath + plot.PlotTypeName + ".png";
+                                    downloadLink.download = plot.PlotTypeName + ".png"; // Set the download attribute with file name
+                                    downloadLink.appendChild(downloadIcon);
+
+                                    cardTextContainer.appendChild(campaignInfo);
+                                    cardTextContainer.appendChild(downloadIcon);
+
+
                                     cardDiv.appendChild(link);
                                     link.appendChild(img);
-                                    cardBodyDiv.appendChild(campaignInfo);
+                                    cardBodyDiv.appendChild(cardTextContainer);
+                                    //cardBodyDiv.appendChild(downloadLink);
                                     cardDiv.appendChild(cardBodyDiv);
                                     colDiv.appendChild(cardDiv);
-    
+
                                     return { minQ2: parseFloat(minQ2), element: colDiv }; // Return object with minQ2 and the DOM element
                                 }
                                 return null;
@@ -664,12 +708,12 @@
                         return [];
                     });
             });
-    
+
             // Wait for all image checks to complete
             Promise.all(promises).then(arrayOfArrays => {
                 const results = arrayOfArrays.flat().filter(result => result !== null); // Flatten and filter out null results
                 results.sort((a, b) => a.minQ2 - b.minQ2); // Sort results by minQ2
-    
+
                 if (results.length > 0) {
                     imageGallery.appendChild(header);
                     results.forEach(result => {
@@ -679,6 +723,7 @@
                     });
                     imageGallery.appendChild(cardDeckDiv);
                 }
+                updateImageCount();
             }).catch(error => {
                 console.error('Error processing promises:', error);
             });
@@ -694,19 +739,19 @@
             // code for old IE browsers
             xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
         }
-    
+
         xmlhttp.onreadystatechange = function () {
             if (this.readyState == 4 && this.status == 200) {
                 var response = JSON.parse(this.responseText);
-    
+
                 // Clear existing menus if needed
                 document.querySelectorAll('.submenu').forEach(menu => menu.innerHTML = '');
-    
+
                 // Loop over each supergroup in the response
                 Object.keys(response).forEach(function (superGroupName) {
-                    var menuId = superGroupName+'Submenu'; // create an ID by removing spaces
+                    var menuId = superGroupName + 'Submenu'; // create an ID by removing spaces
                     var menu = document.getElementById(menuId);
-    
+
                     // Check if the menu exists, if not, you might want to create it or log an error
                     if (menu) {
                         response[superGroupName].forEach(function (item) {
@@ -728,122 +773,74 @@
         xmlhttp.open("GET", "./php/get_groups.php", true);
         xmlhttp.send();
     }
-    
-    /*
-    function populateSubmenus() {
-                var xmlhttp;
-                if (window.XMLHttpRequest) {
-                    xmlhttp = new XMLHttpRequest();
-                } else {
-                    xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
-                }
-
-                xmlhttp.onreadystatechange = function () {
-                    if (this.readyState == 4 && this.status == 200) {
-                        var response = JSON.parse(this.responseText);
-                        var physicsMenu = document.getElementById("PhysicsSubmenu");
-                        var detectorMenu = document.getElementById("DetectorSubmenu");
-
-                        response.Physics.forEach(function (item) {
-                            var link = document.createElement("a");
-                            link.href = "#";
-                            link.textContent = item.name;
-                            link.className = "dropdown-item";
-                            link.setAttribute("data-plotgroup-id", item.id)
-                            link.setAttribute("data-toggle", "tooltip");
-                            link.setAttribute("title", "This is a placeholder name!");
-                            physicsMenu.appendChild(link);
-                        });
-
-                        response.Detector.forEach(function (item) {
-                            var link = document.createElement("a");
-                            link.href = "#";
-                            link.textContent = item.name;
-                            link.className = "dropdown-item";
-                            link.setAttribute("data-plotgroup-id", item.id)
-                            link.setAttribute("data-toggle", "tooltip");
-                            link.setAttribute("title", "This is a placeholder name!");
-                            detectorMenu.appendChild(link);
-                        });
-                    }
-                };
-                xmlhttp.open("GET", "./php/get_PlotGroups.php", true);
-                xmlhttp.send();
-            }
-                */
 
     function updatePlotTypes(plotGroupId) {
-                var xmlhttp = new XMLHttpRequest();
-                xmlhttp.onreadystatechange = function () {
-                    if (this.readyState == 4 && this.status == 200) {
-                        var response = JSON.parse(this.responseText);
-                        var plotTypeSelect = document.getElementById("plotTypeSelect");
-                        plotTypeSelect.innerHTML = "";
+        var xmlhttp = new XMLHttpRequest();
+        xmlhttp.onreadystatechange = function () {
+            if (this.readyState == 4 && this.status == 200) {
+                var response = JSON.parse(this.responseText);
+                var plotTypeSelect = document.getElementById("plotTypeSelect");
+                plotTypeSelect.innerHTML = "";
 
-                        var allOption = document.createElement("option");
-                        allOption.value = "all";
-                        allOption.text = "All";
-                        // make defualt selection
-                        plotTypeSelect.add(allOption);
+                var allOption = document.createElement("option");
+                allOption.value = "all";
+                allOption.text = "All";
+                // make defualt selection
+                plotTypeSelect.add(allOption);
 
 
-                        response.forEach(function (item) {
-                            var option = document.createElement("option");
-                            option.value = item.Name;
-                            option.text = item.Name;
-                            plotTypeSelect.add(option);
-                        });
-
-                        plotTypeSelect.value = "all";
-                        updateImageGallery();
-                    }
-                };
-                xmlhttp.open("GET", "./php/getPlotTypes.php?plotGroupId=" + plotGroupId, true);
-                xmlhttp.send();
-            }
-
-    function updateImageCount() {
-                const imageCount = document.querySelectorAll('#imageGallery .image-item').length;
-                document.getElementById('imageCount').innerText = imageCount + " Images";
-            }
-
-    function sortImages() {
-                const sortSelect = document.getElementById("sortSelect").value;
-                const cardDecks = document.querySelectorAll('.d-flex.flex-row.mb-4'); // Get all card decks
-
-                console.log(`Sorting ${cardDecks.length} card decks...`);
-
-                cardDecks.forEach(deck => {
-                    let colDivs = Array.from(deck.querySelectorAll('.col-md-4')); // Get all card containers in this deck
-
-                    // Log the unsorted state for debugging
-                    console.log('Unsorted cards:', colDivs.map(div => div.getAttribute('data-campaign')));
-
-                    // Sort the containers based on the campaign data
-                    colDivs.sort((a, b) => {
-                        const campaignA = a.getAttribute('data-campaign').split('.').map(Number);
-                        const campaignB = b.getAttribute('data-campaign').split('.').map(Number);
-                        return (sortSelect === 'Oldest' ? 1 : -1) * (campaignA[0] - campaignB[0] || campaignA[1] - campaignB[1]);
-                    });
-
-                    // Log the sorted state for debugging
-                    console.log('Sorted cards:', colDivs.map(div => div.getAttribute('data-campaign')));
-
-                    // Re-append each container in sorted order
-                    colDivs.forEach(colDiv => deck.appendChild(colDiv));
+                response.forEach(function (item) {
+                    var option = document.createElement("option");
+                    option.value = item.Name;
+                    option.text = item.Name;
+                    plotTypeSelect.add(option);
                 });
 
-                console.log("Sorting complete.");
+                plotTypeSelect.value = "all";
+                updateImageGallery();
+                updateImageCount();
             }
+        };
+        xmlhttp.open("GET", "./php/getPlotTypes.php?plotGroupId=" + plotGroupId, true);
+        xmlhttp.send();
+    }
+
+    function updateImageCount() {
+        const imageCount = document.querySelectorAll('#imageGallery .image-item').length;
+        document.getElementById('imageCount').innerText = imageCount + " Images";
+    }
+
+    function sortImages() {
+        const sortSelect = document.getElementById("sortSelect").value;
+        const cardDecks = document.querySelectorAll('.d-flex.flex-row.mb-4'); // Get all card decks
+
+        console.log(`Sorting ${cardDecks.length} card decks...`);
+
+        cardDecks.forEach(deck => {
+            let colDivs = Array.from(deck.querySelectorAll('.col-md-4')); // Get all card containers in this deck
+
+            // Log the unsorted state for debugging
+            console.log('Unsorted cards:', colDivs.map(div => div.getAttribute('data-campaign')));
+
+            // Sort the containers based on the campaign data
+            colDivs.sort((a, b) => {
+                const campaignA = a.getAttribute('data-campaign').split('.').map(Number);
+                const campaignB = b.getAttribute('data-campaign').split('.').map(Number);
+                return (sortSelect === 'Oldest' ? 1 : -1) * (campaignA[0] - campaignB[0] || campaignA[1] - campaignB[1]);
+            });
+
+            // Log the sorted state for debugging
+            console.log('Sorted cards:', colDivs.map(div => div.getAttribute('data-campaign')));
+
+            // Re-append each container in sorted order
+            colDivs.forEach(colDiv => deck.appendChild(colDiv));
+        });
+
+        console.log("Sorting complete.");
+    }
 
     function loadHomePage() {
-                const content = `
-
-                <div class="alert alert-warning alert-dismissible fade show" role="alert" id="alertMessage">
-                    The database that supports this page is undergoing maintenance. Please check back later today. 
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
-
+        const content = `
                 <div class="container-fluid about-section" style="padding-left: 0; padding-right: 0;">
                     <div class="row">
                         <div class="col-md-6">
@@ -862,11 +859,11 @@
                     <p><i class="fa-solid fa-triangle-exclamation"></i> Plots on this page are automatically generated and are not approved for use in presentations or other documents. </p>
                 </footer>
             `;
-                document.getElementById('dynamicContent').innerHTML = content;
-            }
+        document.getElementById('dynamicContent').innerHTML = content;
+    }
 
     function loadOriginalContent() {
-                const content = `<div class="container-fluid" style="padding-left: 0; padding-right: 0;">
+        const content = `<div class="container-fluid" style="padding-left: 0; padding-right: 0;">
     <div class="row">
 
         <div class="col-md-4" id="sidebar">
@@ -940,11 +937,6 @@
                         </select>
                     </div>
                 </div>
-
-                <div class="alert alert-warning alert-dismissible fade show" role="alert" id="alertMessage">
-                    The database that supports this page is undergoing maintenance. Please check back later today. 
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
             </div>
         </div>
  
@@ -970,106 +962,135 @@
         </div>
     </div>
 </div>`;
-                document.getElementById('dynamicContent').innerHTML = content;
-                document.getElementById("sortSelect").addEventListener("change", sortImages);
+        document.getElementById('dynamicContent').innerHTML = content;
+        document.getElementById("sortSelect").addEventListener("change", sortImages);
 
-            }
+    }
 
+    function downloadCardAsPNG(cardElement, buttonElement) {
+        // Find the image within the card and access its 'alt' attribute
+        let imageElement = cardElement.querySelector('img.card-img-top');
+        let imageName = imageElement && imageElement.alt ? imageElement.alt.trim().replace(/ /g, '_') : 'default_card_image';
 
-            function filterPlotTypeOptions() {
-                var input = document.getElementById("plotTypeSearch").value.toLowerCase();
-                var plotTypeSelect = document.getElementById("plotTypeSelect");
-                var options = plotTypeSelect.options;
-            
-                for (var i = 0; i < options.length; i++) {
-                    var option = options[i];
-                    var optionText = option.text.toLowerCase();
-                    if (optionText.indexOf(input) > -1) {
-                        option.style.display = ""; // Option matches, show it
-                    } else {
-                        option.style.display = "none"; // Option does not match, hide it
-                    }
+        // Temporarily hide the button
+
+        // Capture the card
+        html2canvas(cardElement, {
+            scale: 3,
+            onclone: function (clonedDoc) {
+                let clonedButton = clonedDoc.querySelector('.fa-download');
+                if (clonedButton) {
+                    clonedButton.style.visibility = 'hidden';
                 }
             }
+        }).then(function (canvas) {
+            // Restore the button's visibility
+            buttonElement.style.visibility = 'visible';
+
+            var image = canvas.toDataURL("image/png");
+            var link = document.createElement('a');
+            link.href = image;
+            link.download = `${imageName}.png`; // Use the 'alt' text as part of the file name
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        });
+    }
+
+    function filterPlotTypeOptions() {
+        var input = document.getElementById("plotTypeSearch").value.toLowerCase();
+        var plotTypeSelect = document.getElementById("plotTypeSelect");
+        var options = plotTypeSelect.options;
+
+        for (var i = 0; i < options.length; i++) {
+            var option = options[i];
+            var optionText = option.text.toLowerCase();
+            if (optionText.indexOf(input) > -1) {
+                option.style.display = ""; // Option matches, show it
+            } else {
+                option.style.display = "none"; // Option does not match, hide it
+            }
+        }
+    }
 
     document.getElementById('contactForm').addEventListener('submit', function (event) {
-                event.preventDefault(); // Prevent the default form submission behavior
+        event.preventDefault(); // Prevent the default form submission behavior
 
-                // Gather the form data
-                let formData = new FormData(this);
+        // Gather the form data
+        let formData = new FormData(this);
 
-                // Perform the fetch/AJAX call to send data to the server
-                fetch('./php/contact.php', {
-                    method: 'POST',
-                    body: formData
-                })
-                    .then(response => response.text()) // Convert response to text
-                    .then(text => {
-                        // Display the server's response text on the page
-                        if (text.includes('Thank You!')) {
-                            alert('Thank you for contacting us! Your message has been sent.');
-                        } else {
-                            alert('Oops! Something went wrong.');
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error:', error);
-                        alert('Error sending message.');
-                    });
-            });
-
-        document.getElementById('addPlotForm').addEventListener('submit', function (event) {
-            event.preventDefault(); // Prevent the default form submission behavior
-
-            // Gather the form data
-            let formData = new FormData(this);
-
-            // Perform the fetch/AJAX call to send data to the server
-            fetch('./php/addPlotForm.php', {
-                method: 'POST',
-                body: formData
+        // Perform the fetch/AJAX call to send data to the server
+        fetch('./php/contact.php', {
+            method: 'POST',
+            body: formData
+        })
+            .then(response => response.text()) // Convert response to text
+            .then(text => {
+                // Display the server's response text on the page
+                if (text.includes('Thank You!')) {
+                    alert('Thank you for contacting us! Your message has been sent.');
+                } else {
+                    alert('Oops! Something went wrong.');
+                }
             })
-                .then(response => response.text()) // Convert response to text
-                .then(text => {
-                    // Display the server's response text on the page
-                    alert(text)
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('Error submitting plot type.');
-                });
-        });
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error sending message.');
+            });
+    });
 
-        document.getElementById('contactForm').addEventListener('submit', function (event) {
-            if (!this.checkValidity()) {
-                event.preventDefault(); // Prevent form submission
-                alert('Please fill out all required fields.');
-            }
-        });
+    document.getElementById('addPlotForm').addEventListener('submit', function (event) {
+        event.preventDefault(); // Prevent the default form submission behavior
 
-        document.getElementById('contactLink').addEventListener('click', function (event) {
-            event.preventDefault();
-            document.getElementById('modal').style.display = 'block';
-            document.querySelectorAll('.tablink')[0].click(); // Open the first tab by default
-        });
+        // Gather the form data
+        let formData = new FormData(this);
 
-        window.onclick = function (event) {
-            if (event.target == document.getElementById('modal')) {
-                document.getElementById('modal').style.display = 'none';
-            }
+        // Perform the fetch/AJAX call to send data to the server
+        fetch('./php/addPlotForm.php', {
+            method: 'POST',
+            body: formData
+        })
+            .then(response => response.text()) // Convert response to text
+            .then(text => {
+                // Display the server's response text on the page
+                alert(text)
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error submitting plot type.');
+            });
+    });
+
+    document.getElementById('contactForm').addEventListener('submit', function (event) {
+        if (!this.checkValidity()) {
+            event.preventDefault(); // Prevent form submission
+            alert('Please fill out all required fields.');
         }
+    });
 
-        function openForm(evt, formName) {
-            var i, tabcontent, tablinks;
-            tabcontent = document.getElementsByClassName("tabcontent");
-            for (i = 0; i < tabcontent.length; i++) {
-                tabcontent[i].style.display = "none";
-            }
-            tablinks = document.getElementsByClassName("tablink");
-            for (i = 0; i < tablinks.length; i++) {
-                tablinks[i].className = tablinks[i].className.replace(" active", "");
-            }
-            document.getElementById(formName).style.display = "block";
-            evt.currentTarget.className += " active";
+    document.getElementById('contactLink').addEventListener('click', function (event) {
+        event.preventDefault();
+        document.getElementById('modal').style.display = 'block';
+        document.querySelectorAll('.tablink')[0].click(); // Open the first tab by default
+    });
+
+    window.onclick = function (event) {
+        if (event.target == document.getElementById('modal')) {
+            document.getElementById('modal').style.display = 'none';
         }
+    }
+
+    function openForm(evt, formName) {
+        var i, tabcontent, tablinks;
+        tabcontent = document.getElementsByClassName("tabcontent");
+        for (i = 0; i < tabcontent.length; i++) {
+            tabcontent[i].style.display = "none";
+        }
+        tablinks = document.getElementsByClassName("tablink");
+        for (i = 0; i < tablinks.length; i++) {
+            tablinks[i].className = tablinks[i].className.replace(" active", "");
+        }
+        document.getElementById(formName).style.display = "block";
+        evt.currentTarget.className += " active";
+    }
 </script>
