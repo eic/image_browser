@@ -56,10 +56,13 @@
 
     #sidebar {
         position: fixed;
-        top: 80px;
+        top: 100px;
         left: 0;
         width: 300px;
         height: 100%;
+        box-shadow: 3px 0px 5px rgba(0, 0, 0, 0.2);
+        border-radius: 5px;
+
     }
 
     .selector {
@@ -68,10 +71,14 @@
         margin-bottom: 20px;
     }
 
+    .form-label {
+        margin-top: 10px;
+    }
+
     #imageGallery {
         position: absolute;
         top: 160px;
-        left: 300px;
+        left: 315px;
         width: calc(100% - 275px);
         height: calc(100% - 200px);
         overflow-y: auto;
@@ -81,8 +88,8 @@
 
     #galleryInfo {
         position: absolute;
-        top: 80px;
-        left: 300px;
+        top: 95px;
+        left: 315px;
         width: calc(100% - 275px);
         background-color: #ffffff;
         padding: 10px;
@@ -520,69 +527,38 @@
 
     document.addEventListener('DOMContentLoaded', function () {
         populateSubmenus();
+        loadHomePage();  // Load home page content by default
 
-        document.getElementById('homeLink').addEventListener('click', function (e) {
-            e.preventDefault(); // Prevent default link behavior
-            loadHomePage();
-        });
+        document.body.addEventListener("click", function (e) {
+            if (e.target.closest('#homeLink')) {
+                e.preventDefault(); // Prevent default link behavior
+                loadHomePage();
+            } else if (e.target.closest('.submenu a')) {
+                var plotGroup = e.target.getAttribute("data-plotgroup-id");
+                console.log('the selected plot group is: ', plotGroup);
 
-        // Load home page content by default
-        loadHomePage();
-
-        document.getElementById("PhysicsSubmenu").addEventListener("click", function (e) {
-            var plotGroup = e.target.getAttribute("data-plotgroup-id");
-            console.log('the selected plot group is: ', plotGroup)
-            if (plotGroup) {
-                updatePlotTypes(plotGroup);
-            }
-        });
-
-        document.getElementById("DetectorSubmenu").addEventListener("click", function (e) {
-            var plotGroup = e.target.getAttribute("data-plotgroup-id");
-            console.log('the selected plot group is: ', plotGroup)
-            if (plotGroup) {
-                updatePlotTypes(plotGroup);
-            }
-        });
-
-        // Attach event listeners to submenu links
-        document.getElementById('PhysicsSubmenu').addEventListener('click', function (e) {
-            if (e.target.tagName === 'A') {
-                loadOriginalContent();
-            }
-        });
-
-        document.getElementById('DetectorSubmenu').addEventListener('click', function (e) {
-            if (e.target.tagName === 'A') {
-                loadOriginalContent();
-            }
-        });
-
-        document.getElementById('ciSubmenu').addEventListener('click', function (e) {
-            if (e.target.tagName === 'A') {
-                loadOriginalContent();
+                if (plotGroup) {
+                    populateSidebar(plotGroup);
+                    loadOriginalContent(plotGroup);
+                }
             }
         });
     });
 
-    const filterConfig = {
-        "BSM and Precision EW": ["campaign", "plotType"],
-        "Exclusive Diffraction and Tagging": ["campaign", "plotType"],
-        "Inclusive": ["campaign", "plotType"],
-        "Jets and Heavy Flavor": ["campaign", "plotType", "geometry", "energy", "minQ2"],
-        "Semi-Inclusive": ["campaign", "plotType"]
-    };
-
     function updateImageGallery() {
-        var campaignSelect = document.getElementById("campaignSelect");
-        var plotTypeSelect = document.getElementById("plotTypeSelect");
-        var energySelect = document.getElementById("energySelect");
-        var minQ2Select = document.getElementById("minQ2Select");
+        console.log('updateImageGallery called');
 
-        var campaigns = Array.from(campaignSelect.selectedOptions).map(option => option.value);
-        var plotTypes = Array.from(plotTypeSelect.selectedOptions).map(option => option.value);
-        var energies = Array.from(energySelect.selectedOptions).map(option => option.value);
-        var minQ2s = Array.from(minQ2Select.selectedOptions).map(option => option.value);
+        var campaignSelect = document.getElementById("CampaignSelect");
+        var plotTypeSelect = document.getElementById("PlotTypesSelect");
+        var geometrySelect = document.getElementById("GeometrySelect");
+        var energySelect = document.getElementById("EnergySelect");
+        var minQ2Select = document.getElementById("MinQ2Select");
+
+        var campaigns = campaignSelect ? Array.from(campaignSelect.selectedOptions).map(option => option.value) : [];
+        var plotTypes = plotTypeSelect ? Array.from(plotTypeSelect.selectedOptions).map(option => option.value) : [];
+        var energies = energySelect ? Array.from(energySelect.selectedOptions).map(option => option.value) : [];
+        var geometries = geometrySelect ? Array.from(geometrySelect.selectedOptions).map(option => option.value) : [];
+        var minQ2s = minQ2Select ? Array.from(minQ2Select.selectedOptions).map(option => option.value) : [];
 
         // Clear current images
         var imageGallery = document.getElementById('imageGallery');
@@ -627,9 +603,10 @@
                             if (plot.ImagePath.includes(campaign)) {
                                 const pathParts = plot.ImagePath.split('/');
                                 const campaign = pathParts[5];
-                                const geometry = pathParts[6];
-                                const energy = pathParts[9];
-                                const minQ2 = pathParts[10].split("=")[1];
+
+                                const geometry = pathParts.length > 6 ? pathParts[6] : "N/A";
+                                const energy = pathParts.length > 9 ? pathParts[9] : "N/A";
+                                const minQ2 = pathParts.length > 10 ? pathParts[10].split("=")[1] : "N/A";
 
                                 if ((energies.length === 0 || energies.includes(energy)) &&
                                     (minQ2s.length === 0 || minQ2s.includes(minQ2))) {
@@ -661,12 +638,17 @@
 
                                     var campaignInfo = document.createElement("p");
                                     campaignInfo.className = "card-text";
-                                    campaignInfo.innerHTML = `
-                                        Campaign: ${campaign} <br>
-                                        Geometry: ${geometry} <br>
-                                        Energy: ${energy} <br>
-                                        Min Q2: ${minQ2} <br>
-                                    `;
+                                    campaignInfo.innerHTML = `Campaign: ${campaign} <br>`;
+
+                                    if (geometry !== "N/A") {
+                                        campaignInfo.innerHTML += `Geometry: ${geometry} <br>`;
+                                    }
+                                    if (energy !== "N/A") {
+                                        campaignInfo.innerHTML += `Energy: ${energy} <br>`;
+                                    }
+                                    if (minQ2 !== "N/A") {
+                                        campaignInfo.innerHTML += `Min Q2: ${minQ2} <br>`;
+                                    }
 
                                     var downloadIcon = document.createElement("i");
                                     downloadIcon.className = "fas fa-download";
@@ -749,10 +731,14 @@
 
                 // Loop over each supergroup in the response
                 Object.keys(response).forEach(function (superGroupName) {
+                    console.log('superGroupName: ', superGroupName)
+                    //skip superGroupName that do not equal Physics or Detector
+                    if (superGroupName !== "Physics" && superGroupName !== "Detector") {
+                        return;
+                    }
                     var menuId = superGroupName + 'Submenu'; // create an ID by removing spaces
                     var menu = document.getElementById(menuId);
 
-                    // Check if the menu exists, if not, you might want to create it or log an error
                     if (menu) {
                         response[superGroupName].forEach(function (item) {
                             var link = document.createElement("a");
@@ -771,37 +757,6 @@
             }
         };
         xmlhttp.open("GET", "./php/get_groups.php", true);
-        xmlhttp.send();
-    }
-
-    function updatePlotTypes(plotGroupId) {
-        var xmlhttp = new XMLHttpRequest();
-        xmlhttp.onreadystatechange = function () {
-            if (this.readyState == 4 && this.status == 200) {
-                var response = JSON.parse(this.responseText);
-                var plotTypeSelect = document.getElementById("plotTypeSelect");
-                plotTypeSelect.innerHTML = "";
-
-                var allOption = document.createElement("option");
-                allOption.value = "all";
-                allOption.text = "All";
-                // make defualt selection
-                plotTypeSelect.add(allOption);
-
-
-                response.forEach(function (item) {
-                    var option = document.createElement("option");
-                    option.value = item.Name;
-                    option.text = item.Name;
-                    plotTypeSelect.add(option);
-                });
-
-                plotTypeSelect.value = "all";
-                updateImageGallery();
-                updateImageCount();
-            }
-        };
-        xmlhttp.open("GET", "./php/getPlotTypes.php?plotGroupId=" + plotGroupId, true);
         xmlhttp.send();
     }
 
@@ -862,83 +817,10 @@
         document.getElementById('dynamicContent').innerHTML = content;
     }
 
-    function loadOriginalContent() {
+    function loadOriginalContent(plotGroup) {
         const content = `<div class="container-fluid" style="padding-left: 0; padding-right: 0;">
     <div class="row">
-
-        <div class="col-md-4" id="sidebar">
-            <!-- add breadcrumb 
-            <nav aria-label="breadcrumb" id="breadcrumb">
-                <ol class="breadcrumb"></ol>
-            </nav>
--->
-            <div class="p-3 bg-white">
-
-                <label for="campaignSelect" class="form-label">Campaign</label>
-                <select class="form-select" multiple id="campaignSelect" onchange="updateImageGallery()">
-                    <option value="24.02.0">24.02.0</option>
-                    <option value="24.03.1">24.03.1</option>
-                    <option value="24.04.0">24.04.0</option>
-                    <option value="24.05.0" >24.05.0</option>
-                    <option value="24.06.0" selected>24.06.0</option>
-                </select>
-
-                <label for="plotTypeSelect" class="form-label">Plot Type</label>
-                <select class="form-select" multiple id="plotTypeSelect" onchange="updateImageGallery()">
-                </select>
-                <hr>
-
-                <div class="mb-3">
-                    <button
-                        class="btn btn-toggle w-100 text-start align-items-center justify-content-between d-flex"
-                        type="button" data-bs-toggle="collapse" data-bs-target="#filter1" aria-expanded="false"
-                        aria-controls="filter1">
-                        Geometry <span id="filter1-icon">+</span>
-                    </button>
-                    <div class="collapse" id="filter1">
-                        <select class="form-select" multiple id="geometrySelect onchange="updateImageGallery()">
-                            <option value="epic_craterlake">epic_craterlake</option>
-                        </select>
-                    </div>
-                </div>
-
-                <hr>
-                
-                <div class="mb-3">
-                    <button
-                        class="btn btn-toggle w-100 text-start align-items-center justify-content-between d-flex"
-                        type="button" data-bs-toggle="collapse" data-bs-target="#filter2" aria-expanded="false"
-                        aria-controls="filter2">
-                        Energy <span id="filter2-icon">+</span>
-                    </button>
-                    <div class="collapse" id="filter2">
-                        <select class="form-select" multiple id="energySelect" onchange="updateImageGallery()">
-                            <option value="10x100">10x100</option>
-                            <option value="18x275">18x275</option>
-                            <option value="5x41">5x41</option>
-                        </select>
-                    </div>
-                </div>
-                <hr>
-                <div class="mb-3">
-                    <button
-                        class="btn btn-toggle w-100 text-start align-items-center justify-content-between d-flex"
-                        type="button" data-bs-toggle="collapse" data-bs-target="#filter3" aria-expanded="false"
-                        aria-controls="filter3">
-                        MinQ2 <span id="filter3-icon">+</span>
-                    </button>
-                    <div class="collapse" id="filter3">
-                        
-                        <select class="form-select" multiple id="minQ2Select" onchange="updateImageGallery()">
-                            <option value="1">1</option>
-                            <option value="10">10</option>
-                            <option value="100">100</option>
-                            <option value="1000">1000</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
-        </div>
+            <div class="col-md-4" id="sidebar"></div>
  
         <div class="col-md-8">
             <div class="row mb-3 align-items-center" id="galleryInfo">
@@ -964,7 +846,126 @@
 </div>`;
         document.getElementById('dynamicContent').innerHTML = content;
         document.getElementById("sortSelect").addEventListener("change", sortImages);
+    }
 
+    function populateSidebar(plotGroup) {
+        var xmlhttp = new XMLHttpRequest();
+        xmlhttp.onreadystatechange = function () {
+            if (this.readyState == 4 && this.status == 200) {
+                var response = JSON.parse(this.responseText);
+
+                // Define the container where dropdowns will be added
+                const sidebar = document.getElementById('sidebar');
+                sidebar.innerHTML = ''; // Clear existing content in the sidebar
+
+                // Process each key in the response to create dropdowns with data
+                Object.keys(response).forEach(function (key) {
+                    if (response[key].length > 0) { // Only create dropdowns if there are options available
+                        // Create label for the dropdown
+                        var label = document.createElement('label');
+                        label.setAttribute('for', key + 'Select');
+                        label.className = 'form-label';
+                        label.textContent = key === 'PlotTypes' ? 'Plot Type' : key;
+
+
+                        // Create select element
+                        var select = document.createElement('select');
+                        select.id = key + 'Select';
+                        select.className = 'form-select';
+                        select.multiple = true;
+
+                        // Append options to the select element
+                        response[key].forEach(function (item) {
+                            var option = document.createElement('option');
+                            option.value = item;
+                            option.textContent = item;
+                            select.appendChild(option);
+                        });
+
+                        // If the current select is the PlotTypesSelect, add an "All" option
+                        if (select.id === "PlotTypesSelect") {
+                            var allOption = document.createElement('option');
+                            allOption.value = "all";
+                            allOption.textContent = "All";
+                            allOption.selected = true;
+                            select.prepend(allOption);
+                        }
+
+                        // Create button for collapsible functionality
+                        var button = document.createElement('button');
+                        button.className = 'btn btn-toggle w-100 text-start align-items-center justify-content-between d-flex';
+                        button.type = 'button';
+                        button.setAttribute('data-bs-toggle', 'collapse');
+                        button.setAttribute('data-bs-target', '#filter' + key);
+                        button.setAttribute('aria-expanded', 'false');
+                        button.setAttribute('aria-controls', 'filter' + key);
+                        button.innerHTML = `${key === 'PlotTypes' ? 'Plot Type' : key} <span id="filter${key}-icon">+</span>`;
+
+                        // Create div for collapsible content
+                        var collapseDiv = document.createElement('div');
+                        collapseDiv.className = 'collapse';
+                        collapseDiv.id = 'filter' + key;
+                        collapseDiv.appendChild(select);
+
+                        // Add event listener to toggle icon
+                        button.addEventListener('click', function () {
+                            var icon = button.querySelector('span');
+                            icon.textContent = icon.textContent === '+' ? '-' : '+';
+                        });
+
+                        // Set Campaign and Plot Type dropdowns to be open by default
+                        if (key === 'Campaign' || key === 'PlotTypes') {
+                            collapseDiv.classList.add('show');
+                            button.setAttribute('aria-expanded', 'true');
+                            var icon = button.querySelector('span');
+                            icon.textContent = '-';
+                        }
+
+                        // Add label, button, and collapsible div to the sidebar
+                        sidebar.appendChild(button);
+                        sidebar.appendChild(collapseDiv);
+
+                        // If the current select is the CampaignSelect, select the last option by default
+                        if (select.id === "CampaignSelect") {
+                            select.lastElementChild.selected = true;
+                        }
+
+                    }
+                });
+
+                // Set onchange events for the dropdowns
+                setOnChangeEvents();
+
+                // Trigger change event to ensure any default selections are handled
+                updateImageGallery();
+            }
+        };
+        console.log("./php/generate_sidebar.php?superPlotGroup_ID=" + plotGroup);
+        xmlhttp.open("GET", "./php/generate_sidebar.php?superPlotGroup_ID=" + plotGroup, true);
+        xmlhttp.send();
+    }
+    function setOnChangeEvents() {
+        var campaignSelect = document.getElementById("CampaignSelect");
+        var plotTypeSelect = document.getElementById("PlotTypesSelect");
+        var geometrySelect = document.getElementById("GeometrySelect");
+        var energySelect = document.getElementById("EnergySelect");
+        var minQ2Select = document.getElementById("MinQ2Select");
+
+        if (campaignSelect) {
+            campaignSelect.onchange = updateImageGallery;
+        }
+        if (plotTypeSelect) {
+            plotTypeSelect.onchange = updateImageGallery;
+        }
+        if (geometrySelect) {
+            geometrySelect.onchange = updateImageGallery;
+        }
+        if (energySelect) {
+            energySelect.onchange = updateImageGallery;
+        }
+        if (minQ2Select) {
+            minQ2Select.onchange = updateImageGallery;
+        }
     }
 
     function downloadCardAsPNG(cardElement, buttonElement) {
