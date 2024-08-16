@@ -60,7 +60,7 @@ while ($row = $result->fetch_assoc()) {
 
 // Second query to fetch PlotType_IDs and names
 $plotTypeStmt = $conn->prepare("
-    SELECT Plot_Types.ID, Plot_Types.Name 
+    SELECT Plot_Types.ID, Plot_Types.Name, Plot_Types.Description 
     FROM Plot_Types 
     INNER JOIN PlotType_Groupings ON Plot_Types.ID = PlotType_Groupings.PlotType_ID 
     WHERE PlotType_Groupings.PlotGroup_ID = ?
@@ -71,7 +71,10 @@ $plotTypeResult = $plotTypeStmt->get_result();
 
 $plotTypes = [];
 while ($typeRow = $plotTypeResult->fetch_assoc()) {
-    $plotTypes[] = $typeRow['Name'];
+    $plotTypes[] = [
+        'Name' => $typeRow['Name'],
+        'Description' => $typeRow['Description']
+    ];
 }
 
 $data = [];

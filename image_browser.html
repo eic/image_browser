@@ -9,6 +9,10 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
 </head>
 
 <style>
@@ -19,6 +23,7 @@
         font-family: Arial, sans-serif;
         height: 100%;
         overflow: hidden;
+        overflow-x: hidden;
     }
 
     .navbar {
@@ -38,7 +43,7 @@
 
     .nav-logo a,
     .nav-links a {
-        color: #333;
+        color: #000;
         text-decoration: none;
         margin: 0 15px;
         font-size: 18px;
@@ -58,7 +63,7 @@
         position: fixed;
         top: 100px;
         left: 0;
-        width: 300px;
+        width: 400px;
         height: 100%;
         box-shadow: 3px 0px 5px rgba(0, 0, 0, 0.2);
         border-radius: 5px;
@@ -72,14 +77,14 @@
     }
 
     .form-label {
-        margin-top: 10px;
+        margin-top: 15px;
     }
 
     #imageGallery {
         position: absolute;
         top: 160px;
-        left: 315px;
-        width: calc(100% - 275px);
+        left: 415px;
+        width: calc(100%-415px);
         height: calc(100% - 200px);
         overflow-y: auto;
         background-color: #ffffff;
@@ -89,8 +94,8 @@
     #galleryInfo {
         position: absolute;
         top: 95px;
-        left: 315px;
-        width: calc(100% - 275px);
+        left: 415px;
+        width: calc(100% - 385px);
         background-color: #ffffff;
         padding: 10px;
     }
@@ -425,6 +430,10 @@
         vertical-align: bottom;
         /* Align with the middle of the text */
     }
+
+ 
+
+
 </style>
 
 <body>
@@ -464,12 +473,6 @@
         </div>
     </nav>
 
-    <div class="alert alert-warning alert-dismissible fade show" role="alert" id="alertMessage">
-        The database that supports this page is undergoing maintenance. Please check back later today.
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
-
-
     <div id="modal" class="modal">
         <div class="modal-content">
             <!--<span class="close">&times;</span>-->
@@ -494,7 +497,7 @@
                     <h2>Add a new plot type</h2>
                 </div>
                 <div id="reminder">
-                    <p>Macros/Scripts should generate .png files for images. </p>
+                    <p>Macros/scripts should be submitted to the benchmarks repository in GitLab <a href="https://eicweb.phy.anl.gov/EIC/benchmarks" target="_blank"><i class="fab fa-gitlab"></i></a>. Alternatively, you may use this form.  </p>
                 </div>
                 <form id="addPlotForm">
                     <input type="text" id="name" name="name" placeholder="Your Name" required><br>
@@ -512,7 +515,7 @@
     </div>
 
 
-    <div id="dynamicContent"></div>
+    <div id="dynamicContent" class="container-fluid"></div>
     <footer class="footer">
         <p><i class="fa-solid fa-triangle-exclamation"></i> Plots on this page are automatically generated and are not
             approved for use in presentations or other documents. </p>
@@ -535,7 +538,6 @@
                 loadHomePage();
             } else if (e.target.closest('.submenu a')) {
                 var plotGroup = e.target.getAttribute("data-plotgroup-id");
-                console.log('the selected plot group is: ', plotGroup);
 
                 if (plotGroup) {
                     populateSidebar(plotGroup);
@@ -551,14 +553,16 @@
         var campaignSelect = document.getElementById("CampaignSelect");
         var plotTypeSelect = document.getElementById("PlotTypesSelect");
         var geometrySelect = document.getElementById("GeometrySelect");
-        var energySelect = document.getElementById("EnergySelect");
+        var energySelect = document.getElementById("BeamEnergySelect");
         var minQ2Select = document.getElementById("MinQ2Select");
+        var particleTypeSelect = document.getElementById("ParticleTypeSelect");
 
         var campaigns = campaignSelect ? Array.from(campaignSelect.selectedOptions).map(option => option.value) : [];
         var plotTypes = plotTypeSelect ? Array.from(plotTypeSelect.selectedOptions).map(option => option.value) : [];
         var energies = energySelect ? Array.from(energySelect.selectedOptions).map(option => option.value) : [];
         var geometries = geometrySelect ? Array.from(geometrySelect.selectedOptions).map(option => option.value) : [];
         var minQ2s = minQ2Select ? Array.from(minQ2Select.selectedOptions).map(option => option.value) : [];
+        var particleTypes = particleTypeSelect ? Array.from(particleTypeSelect.selectedOptions).map(option => option.value) : [];
 
         // Clear current images
         var imageGallery = document.getElementById('imageGallery');
@@ -582,11 +586,12 @@
 
         // Loop through each plot type and group images from different campaigns
         plotTypes.forEach(plotType => {
-            console.log('Fetching images for:', plotType);
             var cardDeckDiv = document.createElement("div");
             cardDeckDiv.className = "d-flex flex-row mb-4";
 
             var header = document.createElement("h3");
+            // if there is a Description, use that else use the plotType
+            
             header.textContent = plotType.replace(".png", "");
             header.className = "text-center small";
 
@@ -608,8 +613,11 @@
                                 const energy = pathParts.length > 9 ? pathParts[9] : "N/A";
                                 const minQ2 = pathParts.length > 10 ? pathParts[10].split("=")[1] : "N/A";
 
+                                const hasParticleType = particleTypes.length === 0 || particleTypes.some(pt => plot.PlotTypeName.includes(pt));
+
                                 if ((energies.length === 0 || energies.includes(energy)) &&
-                                    (minQ2s.length === 0 || minQ2s.includes(minQ2))) {
+                                    (minQ2s.length === 0 || minQ2s.includes(minQ2)) && hasParticleType) {
+                                        
                                     var colDiv = document.createElement("div");
                                     colDiv.className = "col-md-4";
                                     colDiv.setAttribute('data-campaign', campaign); // Add data attribute for sorting
@@ -748,6 +756,21 @@
                             link.setAttribute("data-plotgroup-id", item.id);
                             link.setAttribute("data-toggle", "tooltip");
                             link.setAttribute("title", "Click to view plots for " + item.name);
+
+                            // Disable items that are not "Jets and Heavy Flavor" for PhysicsSubmenu
+                            if (superGroupName === "Physics" && item.name !== "Jets and Heavy Flavor") {
+                                link.classList.add("disabled");
+                                link.setAttribute("aria-disabled", "true");
+                                link.style.pointerEvents = "none"; // Disable clicking
+                                link.style.opacity = "0.5"; // Optional: make it look disabled
+                            }
+
+                            if (superGroupName === "Detector" && item.name !=="Material Scan" && item.name !=="Barrel Imaging Calorimeter"){
+                                link.classList.add("disabled");
+                                link.setAttribute("aria-disabled", "true");
+                                link.style.pointerEvents = "none"; // Disable clicking
+                                link.style.opacity = "0.5"; 
+                            }
                             menu.appendChild(link);
                         });
                     } else {
@@ -820,19 +843,20 @@
     function loadOriginalContent(plotGroup) {
         const content = `<div class="container-fluid" style="padding-left: 0; padding-right: 0;">
     <div class="row">
-            <div class="col-md-4" id="sidebar"></div>
+            <div class="col-12 col-md-4 mb-3" id="sidebar"></div>
  
-        <div class="col-md-8">
+        <div class="col-12 col-md-8">
             <div class="row mb-3 align-items-center" id="galleryInfo">
-                <div class="col-md-4">
+                <div class="col-12 col-md-4">
                     <span id="imageCount">Count Images</span>
                 </div>
-                <div class="col-md-8 d-flex justify-content-end">
+                <div class="col-12 col-md-8 d-flex justify-content-end">
+                    <!--
                     <div class="input-group" id="searchBar" style="width: 200px;">
                         <span class="input-group-text"><i class="fas fa-search"></i></span>
                         <input type="text" id="searchBar" class="form-control" placeholder="Search..."
                             oninput="filterImages()">
-                    </div>
+                    </div>-->
                     <select class="form-select ms-2" style="width: 100px;" id="sortSelect">
                         <option value="default">Sort by</option>
                         <option value="Newest">Newest</option>
@@ -853,35 +877,44 @@
         xmlhttp.onreadystatechange = function () {
             if (this.readyState == 4 && this.status == 200) {
                 var response = JSON.parse(this.responseText);
-
+    
                 // Define the container where dropdowns will be added
                 const sidebar = document.getElementById('sidebar');
                 sidebar.innerHTML = ''; // Clear existing content in the sidebar
-
+    
                 // Process each key in the response to create dropdowns with data
                 Object.keys(response).forEach(function (key) {
+                    console.log('found keys: ', key);
                     if (response[key].length > 0) { // Only create dropdowns if there are options available
                         // Create label for the dropdown
+                        //remove spaces in key if they exist
+                        var sanitizedKey = key.replace(/\s+/g, '');
                         var label = document.createElement('label');
-                        label.setAttribute('for', key + 'Select');
+                        label.setAttribute('for', sanitizedKey + 'Select');
+                        console.log('label: ', label)
                         label.className = 'form-label';
                         label.textContent = key === 'PlotTypes' ? 'Plot Type' : key;
-
-
+    
                         // Create select element
                         var select = document.createElement('select');
-                        select.id = key + 'Select';
+                        select.id = key.replace(/\s+/g, '') + 'Select'; // Remove spaces for ID
                         select.className = 'form-select';
                         select.multiple = true;
-
+    
+    
                         // Append options to the select element
                         response[key].forEach(function (item) {
                             var option = document.createElement('option');
-                            option.value = item;
-                            option.textContent = item;
+                            if (typeof item === 'object' && item !== null) {
+                                option.value = item.Name; // Assuming you still want to use Name as the value
+                                option.textContent = item.Description ? item.Description : item.Name;
+                            } else {
+                                option.value = item;
+                                option.textContent = item;
+                            }
                             select.appendChild(option);
                         });
-
+    
                         // If the current select is the PlotTypesSelect, add an "All" option
                         if (select.id === "PlotTypesSelect") {
                             var allOption = document.createElement('option');
@@ -889,30 +922,31 @@
                             allOption.textContent = "All";
                             allOption.selected = true;
                             select.prepend(allOption);
-                        }
 
+                        }
+    
                         // Create button for collapsible functionality
                         var button = document.createElement('button');
                         button.className = 'btn btn-toggle w-100 text-start align-items-center justify-content-between d-flex';
                         button.type = 'button';
                         button.setAttribute('data-bs-toggle', 'collapse');
-                        button.setAttribute('data-bs-target', '#filter' + key);
+                        button.setAttribute('data-bs-target', '#filter' + key.replace(/\s+/g, ''));
                         button.setAttribute('aria-expanded', 'false');
-                        button.setAttribute('aria-controls', 'filter' + key);
-                        button.innerHTML = `${key === 'PlotTypes' ? 'Plot Type' : key} <span id="filter${key}-icon">+</span>`;
-
+                        button.setAttribute('aria-controls', 'filter' + key.replace(/\s+/g, ''));
+                        button.innerHTML = `${key === 'PlotTypes' ? 'Plot Type' : key} <span id="filter${key.replace(/\s+/g, '')}-icon">+</span>`;
+        
                         // Create div for collapsible content
                         var collapseDiv = document.createElement('div');
                         collapseDiv.className = 'collapse';
-                        collapseDiv.id = 'filter' + key;
+                        collapseDiv.id = 'filter' + key.replace(/\s+/g, '');
                         collapseDiv.appendChild(select);
-
+        
                         // Add event listener to toggle icon
                         button.addEventListener('click', function () {
                             var icon = button.querySelector('span');
                             icon.textContent = icon.textContent === '+' ? '-' : '+';
                         });
-
+    
                         // Set Campaign and Plot Type dropdowns to be open by default
                         if (key === 'Campaign' || key === 'PlotTypes') {
                             collapseDiv.classList.add('show');
@@ -920,36 +954,51 @@
                             var icon = button.querySelector('span');
                             icon.textContent = '-';
                         }
-
+    
                         // Add label, button, and collapsible div to the sidebar
                         sidebar.appendChild(button);
                         sidebar.appendChild(collapseDiv);
-
-                        // If the current select is the CampaignSelect, select the last option by default
+    
                         if (select.id === "CampaignSelect") {
-                            select.lastElementChild.selected = true;
+                            if (plotGroup === '28') {
+                                // Set "24.04.0" as the default selection if it exists
+                                Array.from(select.options).forEach(option => {
+                                    if (option.value === "24.04.0") {
+                                        option.selected = true;
+                                    }
+                                });
+                            } else {
+                                select.lastElementChild.selected = true;
+                            }
                         }
 
+
+    
+    
+                    } else {
+                        console.log(`No items found for ${key}`);
                     }
                 });
-
+    
                 // Set onchange events for the dropdowns
                 setOnChangeEvents();
-
+    
                 // Trigger change event to ensure any default selections are handled
                 updateImageGallery();
             }
         };
-        console.log("./php/generate_sidebar.php?superPlotGroup_ID=" + plotGroup);
         xmlhttp.open("GET", "./php/generate_sidebar.php?superPlotGroup_ID=" + plotGroup, true);
         xmlhttp.send();
     }
+    
     function setOnChangeEvents() {
         var campaignSelect = document.getElementById("CampaignSelect");
         var plotTypeSelect = document.getElementById("PlotTypesSelect");
         var geometrySelect = document.getElementById("GeometrySelect");
-        var energySelect = document.getElementById("EnergySelect");
+        var energySelect = document.getElementById("BeamEnergySelect");
         var minQ2Select = document.getElementById("MinQ2Select");
+        var particleTypeSelect = document.getElementById("ParticleTypeSelect");
+        
 
         if (campaignSelect) {
             campaignSelect.onchange = updateImageGallery;
@@ -965,6 +1014,10 @@
         }
         if (minQ2Select) {
             minQ2Select.onchange = updateImageGallery;
+        }
+
+        if (particleTypeSelect) {
+            particleTypeSelect.onchange = updateImageGallery;
         }
     }
 
