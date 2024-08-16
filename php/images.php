@@ -27,7 +27,7 @@ $plotNames = array_map('trim', $plotNames);
 // Prepare the query to get plot information
 $plotNamesPlaceholders = implode(',', array_fill(0, count($plotNames), '?'));
 $query = "
-    SELECT Plots.*, Plot_Types.Name AS PlotTypeName
+    SELECT Plots.*, Plot_Types.Name AS PlotTypeName, Plot_Types.Description AS Description
     FROM Plots
     JOIN Plot_Types ON Plots.Plot_Types_ID = Plot_Types.ID
     WHERE Plot_Types.Name IN ($plotNamesPlaceholders) and Plot_Types.IsChunked= ?
@@ -58,6 +58,7 @@ while ($row = mysqli_fetch_assoc($result)) {
         'PlotTypeID' => $row['Plot_Types_ID'],
         'ImagePath' => $row['RunPeriod'],
         'PlotTypeName' => $row['PlotTypeName'],
+        'Description' => $row['Description']
     ];
     $plots[] = $plot;
 }
