@@ -5,6 +5,7 @@ import argparse
 import json
 from utils.ConnectToDB import DBManager
 import cv2
+from datetime import datetime
 
 connector = None
 
@@ -32,7 +33,7 @@ def process_image(filepath):
 
         RunNumber = 0  # Always zero
         RunPeriod = ensure_trailing_slash(f"{locale}/{subloc}")
-        Name = plot.split(".")[0]
+        Name = plot.rsplit(".", 1)[0]
 
         print(f"Name of plot: {Name}, Run Period: {RunPeriod}")
 
@@ -54,7 +55,7 @@ def process_image(filepath):
             if read_img is None or read_img.size == 0:
                 return
             print("Inserting plot")
-            insert_q = f'INSERT INTO Plots (Plot_Types_ID, RunPeriod, RunNumber) VALUES ({PT_ID}, "{RunPeriod}", {RunNumber})'
+            insert_q = f'INSERT INTO Plots (Plot_Types_ID, RunPeriod, RunNumber, DateTime) VALUES ({PT_ID}, "{RunPeriod}", {RunNumber}, NOW())'
             connector.Update(insert_q)
         else:
             print("Plot already inserted")
