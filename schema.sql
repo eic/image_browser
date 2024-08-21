@@ -1,0 +1,45 @@
+CREATE DATABASE IF NOT EXISTS image_browser;
+
+USE image_browser;
+
+CREATE TABLE PlotGroups (
+    ID INT AUTO_INCREMENT PRIMARY KEY,
+    Name VARCHAR(255) NOT NULL,
+    Type VARCHAR(255) NOT NULL
+);
+
+CREATE TABLE SuperGroups (
+    ID INT AUTO_INCREMENT PRIMARY KEY,
+    PlotGroup_ID INT NOT NULL,
+    SuperPlotGroup_ID INT NOT NULL,
+    FOREIGN KEY (PlotGroup_ID) REFERENCES PlotGroups(ID),
+    FOREIGN KEY (SuperPlotGroup_ID) REFERENCES PlotGroups(ID)
+);
+
+CREATE TABLE Plot_Types (
+    ID INT AUTO_INCREMENT PRIMARY KEY,
+    Name VARCHAR(255) NOT NULL,
+    Description TEXT,
+    FileType VARCHAR(50),
+    IsChunked BOOLEAN
+);
+
+CREATE TABLE PlotType_Groupings (
+    ID INT AUTO_INCREMENT PRIMARY KEY,
+    PlotType_ID INT NOT NULL,
+    PlotGroup_ID INT NOT NULL,
+    FOREIGN KEY (PlotType_ID) REFERENCES Plot_Types(ID),
+    FOREIGN KEY (PlotGroup_ID) REFERENCES PlotGroups(ID)
+);
+
+CREATE TABLE Plots (
+    ID INT AUTO_INCREMENT PRIMARY KEY,
+    Plot_Types_ID INT NOT NULL,
+    RunPeriod VARCHAR(255) NOT NULL,
+    RunNumber INT NOT NULL,
+    DateTime DATETIME NOT NULL,
+    ForcedTraining BOOLEAN,
+    FOREIGN KEY (Plot_Types_ID) REFERENCES Plot_Types(ID)
+);
+
+
