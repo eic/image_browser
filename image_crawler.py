@@ -47,7 +47,7 @@ def process_image(filepath):
             PT_ID = Plot_Type_ID[0]["ID"]
             print(f'Plot type ID: {PT_ID}')
 
-        unique_plot_q = f'SELECT ID, ForcedTraining FROM Plots WHERE Plot_Types_ID={PT_ID} AND RunNumber={RunNumber} AND RunPeriod="{RunPeriod}"'
+        unique_plot_q = f'SELECT ID FROM Plots WHERE Plot_Types_ID={PT_ID} AND RunNumber={RunNumber} AND RunPeriod="{RunPeriod}"'
         Plot = connector.FetchAll(unique_plot_q)
 
         if len(Plot) == 0:
