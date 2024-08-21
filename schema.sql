@@ -1,7 +1,3 @@
-CREATE DATABASE IF NOT EXISTS image_browser;
-
-USE image_browser;
-
 CREATE TABLE PlotGroups (
     ID INT AUTO_INCREMENT PRIMARY KEY,
     Name VARCHAR(255) NOT NULL,
@@ -41,5 +37,3 @@ CREATE TABLE Plots (
     ForcedTraining BOOLEAN,
     FOREIGN KEY (Plot_Types_ID) REFERENCES Plot_Types(ID)
 );
-
-
