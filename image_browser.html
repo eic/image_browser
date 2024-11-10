@@ -10,6 +10,7 @@
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lazysizes/5.3.2/lazysizes.min.js" async></script>
 
     <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 
@@ -22,7 +23,7 @@
         padding: 0;
         font-family: Arial, sans-serif;
         height: 100%;
-        overflow: hidden;
+        overflow-y: auto;
         overflow-x: hidden;
     }
 
@@ -60,14 +61,14 @@
     }
 
     #sidebar {
-        position: fixed;
-        top: 100px;
-        left: 0;
-        width: 400px;
-        height: 100%;
+        position: relative;
+        width: 100%;
+        height: auto;
+        overflow-y: auto;
         box-shadow: 3px 0px 5px rgba(0, 0, 0, 0.2);
         border-radius: 5px;
-
+        top: 100px;
+        left: 0;
     }
 
     .selector {
@@ -80,24 +81,68 @@
         margin-top: 15px;
     }
 
-    #imageGallery {
-        position: absolute;
-        top: 160px;
-        left: 415px;
-        width: calc(100%-415px);
-        height: calc(100% - 200px);
-        overflow-y: auto;
+    #imageGallery,
+    #galleryInfo {
+        position: relative;
+        /* Ensure they flow normally within the document */
+        top: 0;
+        left: 0;
+        width: 100%;
+        /* Full width for smaller screens */
+        padding: 10px;
         background-color: #ffffff;
-        display: flex;
+        box-sizing: border-box;
+        /* Padding included in width */
     }
 
-    #galleryInfo {
-        position: absolute;
-        top: 95px;
-        left: 415px;
-        width: calc(100% - 385px);
-        background-color: #ffffff;
-        padding: 10px;
+    #imageGallery {
+        height: auto;
+        /* Flexible height */
+        overflow-y: auto;
+        /* Allow vertical scrolling */
+        display: flex;
+        flex-wrap: wrap;
+        /* Responsive image wrapping */
+    }
+
+    /* Medium screens and larger */
+    @media (min-width: 768px) {
+        #sidebar {
+            position: fixed;
+            /* Fixed position on larger screens */
+            top: 100px;
+            /* Set the top offset */
+            left: 0;
+            /* Aligned to the left edge */
+            width: 300px;
+            /* Fixed width */
+            height: calc(100% - 100px);
+            /* Adjusted height based on the top offset */
+        }
+
+        #mainContent {
+            margin-left: 300px;
+            /* Offset main content to avoid overlapping with the sidebar */
+        }
+
+        #imageGallery {
+            position: relative;
+            /* Maintain relative positioning for flexibility */
+            left: 0;
+            /* Align left edge with the content area */
+            width: calc(100% - 300px);
+            /* Adjust width to account for sidebar */
+            margin-top: 50px;
+        }
+
+        #galleryInfo {
+            position: relative;
+            /* Keep relative to flow with document layout */
+            left: 0;
+            /* Align with main content */
+            top: 0;
+            /* Reset top alignment */
+        }
     }
 
     .d-flex {
@@ -431,9 +476,16 @@
         /* Align with the middle of the text */
     }
 
- 
-
-
+    select[multiple] {
+        font-size: 16px;
+        /* Increase the font size */
+        height: 400px;
+        /* Automatically adjust the height */
+        width: 250px;
+        /* Set a custom width */
+        padding: 10px;
+        /* Add padding to increase the size */
+    }
 </style>
 
 <body>
@@ -460,10 +512,6 @@
                     </li>
                     <li>
                         <a class="nav-link" href="#" id="ciLink">CI</a>
-                        <div id="ciSubmenu" class="submenu"></div>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#" disabled>TDR</a>
                     </li>
                     <li class="nav-item">
                         <a class=" btn-custom" href="mailto:roark@jlab.org" id="contactLink">Contact</a>
@@ -497,7 +545,9 @@
                     <h2>Add a new plot type</h2>
                 </div>
                 <div id="reminder">
-                    <p>Macros/scripts should be submitted to the benchmarks repository in GitLab <a href="https://eicweb.phy.anl.gov/EIC/benchmarks" target="_blank"><i class="fab fa-gitlab"></i></a>. Alternatively, you may use this form.  </p>
+                    <p>Macros/scripts should be submitted to the benchmarks repository in GitLab <a
+                            href="https://eicweb.phy.anl.gov/EIC/benchmarks" target="_blank"><i
+                                class="fab fa-gitlab"></i></a>. Alternatively, you may use this form. </p>
                 </div>
                 <form id="addPlotForm">
                     <input type="text" id="name" name="name" placeholder="Your Name" required><br>
@@ -556,6 +606,7 @@
         var energySelect = document.getElementById("BeamEnergySelect");
         var minQ2Select = document.getElementById("MinQ2Select");
         var particleTypeSelect = document.getElementById("ParticleTypeSelect");
+        var pipelineSelect = document.getElementById("PipelineSelect");
 
         var campaigns = campaignSelect ? Array.from(campaignSelect.selectedOptions).map(option => option.value) : [];
         var plotTypes = plotTypeSelect ? Array.from(plotTypeSelect.selectedOptions).map(option => option.value) : [];
@@ -563,16 +614,11 @@
         var geometries = geometrySelect ? Array.from(geometrySelect.selectedOptions).map(option => option.value) : [];
         var minQ2s = minQ2Select ? Array.from(minQ2Select.selectedOptions).map(option => option.value) : [];
         var particleTypes = particleTypeSelect ? Array.from(particleTypeSelect.selectedOptions).map(option => option.value) : [];
+        var pipelines = pipelineSelect ? Array.from(pipelineSelect.selectedOptions).map(option => option.value) : [];
 
         // Clear current images
         var imageGallery = document.getElementById('imageGallery');
         imageGallery.innerHTML = '';
-
-        // Check if campaigns and plotTypes have values
-        if (campaigns.length === 0 || plotTypes.length === 0) {
-            console.log('No campaigns or plot types selected');
-            return; // Exit function if no selections are made
-        }
 
         if (plotTypes.length === 1) {
             imageGallery.classList.add("single-plot");
@@ -584,141 +630,247 @@
             plotTypes = Array.from(plotTypeSelect.options).map(option => option.value).filter(value => value !== 'all');
         }
 
-        // Loop through each plot type and group images from different campaigns
+        // Determine if IsChunked should be 1 or 0
+        var IsChunked = pipelines.length > 0 ? 1 : 0;
+
+        // Loop through each plot type and fetch images
         plotTypes.forEach(plotType => {
             var cardDeckDiv = document.createElement("div");
-            cardDeckDiv.className = "d-flex flex-row mb-4";
+            cardDeckDiv.className = "d-flex flex-row mb-4 flex-wrap";
 
-            var header = document.createElement("h3");
-            // if there is a Description, use that else use the plotType
-            
-            header.textContent = plotType.replace(".png", "");
-            header.className = "text-center small";
+            // Variables to hold header and subheader
+            var header = document.createElement("h2");
+            header.className = "text-left";
+            header.style.fontSize = "24px";
+
+            var headerSet = false; // Flag to check if header text is set
+            var headerAppended = false; // Flag to check if header has been appended to the DOM
 
             // Fetch image paths from the PHP script
-            var promises = campaigns.map(campaign => {
-                return fetch(`/epic/php/images.php?plotName=${plotType}`)
-                    .then(response => response.json())
-                    .then(data => {
-                        if (!data) {
-                            console.error('No data received from the server for campaign:', campaign);
-                            return [];
-                        }
-                        return data.map(plot => {
-                            if (plot.ImagePath.includes(campaign)) {
-                                const pathParts = plot.ImagePath.split('/');
-                                const campaign = pathParts[5];
+            fetch(`/epic/php/images.php?plotName=${encodeURIComponent(plotType)}&IsChunked=${IsChunked}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (!data || data.length === 0) {
+                        console.error('No data received from the server for plotType:', plotType);
+                        return;
+                    }
 
-                                const geometry = pathParts.length > 6 ? pathParts[6] : "N/A";
-                                const energy = pathParts.length > 9 ? pathParts[9] : "N/A";
-                                const minQ2 = pathParts.length > 10 ? pathParts[10].split("=")[1] : "N/A";
+                    // Set header text using DisplayName from the first plot
+                    if (!headerSet) {
+                        let displayText = data[0].DisplayName || plotType.replace(".png", "");
+                        header.textContent = displayText;
+                        headerSet = true;
+                    }
 
-                                const hasParticleType = particleTypes.length === 0 || particleTypes.some(pt => plot.PlotTypeName.includes(pt));
+                    // Variable to hold subheader if needed
+                    var subHeader = null;
+                    // Check if Description is available and different from DisplayName
+                    if (data[0].Description && data[0].Description !== data[0].DisplayName) {
+                        // Create the subheader element
+                        subHeader = document.createElement("h3");
+                        subHeader.style.fontSize = "18px"; // Set font size for subheader
+                        subHeader.style.fontWeight = "normal"; // Make subheader less bold than header
+                        subHeader.style.marginTop = "5px"; // Optional: Add some spacing
+                        subHeader.textContent = data[0].Description;
+                    }
 
-                                if ((energies.length === 0 || energies.includes(energy)) &&
-                                    (minQ2s.length === 0 || minQ2s.includes(minQ2)) && hasParticleType) {
-                                        
-                                    var colDiv = document.createElement("div");
-                                    colDiv.className = "col-md-4";
-                                    colDiv.setAttribute('data-campaign', campaign); // Add data attribute for sorting
+                    var results = data.map(plot => {
+                        const pathParts = plot.ImagePath.split('/');
 
-                                    var cardDiv = document.createElement("div");
-                                    cardDiv.className = "card mb-4 mx-2";
+                        let pipeline = null;
+                        let pipeline_id = null;
+                        let campaign = null;
+                        let geometry = null;
+                        let energy = null;
+                        let minQ2 = null;
 
-                                    var link = document.createElement("a");
-                                    link.href = plot.ImagePath + plot.PlotTypeName + ".png";
-                                    link.target = "_blank";
+                        // Check if the path contains 'images' directory and determine indices accordingly
+                        const imagesIndex = pathParts.indexOf('images');
+                        const pipelinesIndex = pathParts.indexOf('pipelines');
 
-                                    var img = document.createElement("img");
-                                    img.style.paddingTop = "10px";
-                                    img.src = plot.ImagePath + plot.PlotTypeName + ".png";
-                                    img.className = "card-img-top image-item";
-                                    img.alt = plot.PlotTypeName;
-
-                                    var tooltipText = `path: ${plot.ImagePath}`;
-                                    img.title = tooltipText;
-
-                                    var cardBodyDiv = document.createElement("div");
-                                    cardBodyDiv.className = "card-body";
-
-                                    var cardTextContainer = document.createElement("div");
-                                    cardTextContainer.className = "card-text-container";
-
-                                    var campaignInfo = document.createElement("p");
-                                    campaignInfo.className = "card-text";
-                                    campaignInfo.innerHTML = `Campaign: ${campaign} <br>`;
-
-                                    if (geometry !== "N/A") {
-                                        campaignInfo.innerHTML += `Geometry: ${geometry} <br>`;
-                                    }
-                                    if (energy !== "N/A") {
-                                        campaignInfo.innerHTML += `Energy: ${energy} <br>`;
-                                    }
-                                    if (minQ2 !== "N/A") {
-                                        campaignInfo.innerHTML += `Min Q2: ${minQ2} <br>`;
-                                    }
-
-                                    var downloadIcon = document.createElement("i");
-                                    downloadIcon.className = "fas fa-download";
-                                    downloadIcon.title = "Download Image";
-
-                                    downloadIcon.addEventListener('click', function (event) {
-                                        event.stopPropagation();
-                                        event.preventDefault(); //removing this will download the image AND the card simultaneously
-                                        downloadCardAsPNG(cardDiv, downloadIcon);
-                                    }, { once: true });
-
-
-
-                                    // Create a link for the download icon
-                                    var downloadLink = document.createElement("a");
-                                    downloadLink.href = plot.ImagePath + plot.PlotTypeName + ".png";
-                                    downloadLink.download = plot.PlotTypeName + ".png"; // Set the download attribute with file name
-                                    downloadLink.appendChild(downloadIcon);
-
-                                    cardTextContainer.appendChild(campaignInfo);
-                                    cardTextContainer.appendChild(downloadIcon);
-
-
-                                    cardDiv.appendChild(link);
-                                    link.appendChild(img);
-                                    cardBodyDiv.appendChild(cardTextContainer);
-                                    //cardBodyDiv.appendChild(downloadLink);
-                                    cardDiv.appendChild(cardBodyDiv);
-                                    colDiv.appendChild(cardDiv);
-
-                                    return { minQ2: parseFloat(minQ2), element: colDiv }; // Return object with minQ2 and the DOM element
-                                }
-                                return null;
+                        if (pipelinesIndex !== -1) {
+                            pipeline = pathParts.length > pipelinesIndex + 1 ? pathParts[pipelinesIndex + 1] : null;
+                            if (pipeline) {
+                                let pipelineParts = pipeline.split('-');
+                                pipeline_id = pipelineParts.length > 1 ? pipelineParts[1] : null;
                             }
-                            return null;
-                        }).filter(item => item !== null); // Filter out null results
-                    }).catch(error => {
-                        console.error('Error fetching data for campaign:', campaign, error);
-                        return [];
-                    });
-            });
-
-            // Wait for all image checks to complete
-            Promise.all(promises).then(arrayOfArrays => {
-                const results = arrayOfArrays.flat().filter(result => result !== null); // Flatten and filter out null results
-                results.sort((a, b) => a.minQ2 - b.minQ2); // Sort results by minQ2
-
-                if (results.length > 0) {
-                    imageGallery.appendChild(header);
-                    results.forEach(result => {
-                        if (result && result.element) {
-                            cardDeckDiv.appendChild(result.element); // Append sorted elements
                         }
-                    });
-                    imageGallery.appendChild(cardDeckDiv);
-                }
-                updateImageCount();
-            }).catch(error => {
-                console.error('Error processing promises:', error);
-            });
-        }); // Closing brace for plotTypes.forEach
+
+                        if (imagesIndex !== -1 && IsChunked === 0) {
+                            // For non-CI plots, extract campaign info
+                            // If 'images' directory is found, the campaign (if any) should be the next directory
+                            campaign = pathParts.length > imagesIndex + 1 ? pathParts[imagesIndex + 1] : null;
+
+                            // Check if the campaign is actually a known campaign or just a directory like 'MaterialScan'
+                            const knownCampaigns = campaigns.length > 0 ? campaigns : []; // List of known campaigns
+                            if (!knownCampaigns.includes(campaign)) {
+                                // If not a known campaign, set campaign to null
+                                campaign = null;
+                            }
+
+                            geometry = pathParts.length > imagesIndex + 2 ? pathParts[imagesIndex + 2] : null;
+                            energy = pathParts.length > imagesIndex + 5 ? pathParts[imagesIndex + 5] : null;
+                            minQ2 = pathParts.length > imagesIndex + 6 ? (pathParts[imagesIndex + 6].split("=")[1] || null) : null;
+                        }
+
+                        const hasPipeline = pipelines.length === 0 || (pipeline_id && pipelines.includes(pipeline_id));
+                        const hasCampaign = campaigns.length === 0 || (campaign && campaigns.includes(campaign));
+                        const hasGeometry = geometries.length === 0 || (geometry && geometries.includes(geometry));
+                        const hasEnergy = energies.length === 0 || (energy && energies.includes(energy));
+                        const hasMinQ2 = minQ2s.length === 0 || (minQ2 && minQ2s.includes(minQ2));
+                        const hasParticleType = particleTypes.length === 0 || particleTypes.some(pt => plot.PlotTypeName.includes(pt));
+
+                        // Include hasPipeline in the condition
+                        if (hasPipeline && hasCampaign && hasGeometry && hasEnergy && hasMinQ2 && hasParticleType) {
+                            var colDiv = document.createElement("div");
+                            colDiv.className = "col-md-4";
+                            colDiv.setAttribute('data-campaign', campaign); // Add data attribute for sorting
+
+                            var cardDiv = document.createElement("div");
+                            cardDiv.className = "card mb-4 mx-2";
+
+                            var link = document.createElement("a");
+                            link.setAttribute('data-href', plot.ImagePath + plot.PlotTypeName + ".png");
+                            link.target = "_blank";
+                            link.rel = "noopener noreferrer"; // For security
+
+                            // Set href on click to prevent prefetching
+                            link.addEventListener('click', function (event) {
+                                event.preventDefault(); // Prevent default action
+                                var url = link.getAttribute('data-href');
+                                window.open(url, '_blank');
+                            });
+
+                            /*
+                            var img = document.createElement("img");
+                            img.style.paddingTop = "10px";
+                            img.src = plot.ImagePath + plot.PlotTypeName + ".png";
+                            img.className = "card-img-top image-item";
+                            img.alt = plot.PlotTypeName;
+                            */
+                            var img = document.createElement("img");
+                            img.style.paddingTop = "10px";
+                            img.setAttribute('data-src', plot.ImagePath + plot.PlotTypeName + ".png");
+                            img.className = "card-img-top image-item lazyload"; // Add 'lazyload' class
+                            img.alt = plot.PlotTypeName;
+
+                            var tooltipText = `Path: ${plot.ImagePath}`;
+                            img.title = tooltipText;
+
+                            var cardBodyDiv = document.createElement("div");
+                            cardBodyDiv.className = "card-body";
+
+                            var cardTextContainer = document.createElement("div");
+                            cardTextContainer.className = "card-text-container";
+
+                            var campaignInfo = document.createElement("p");
+                            campaignInfo.className = "card-text";
+                            let campaignTextItems = [];
+
+                            if (IsChunked === 1) {
+                                // For CI plots, only add Pipeline ID
+                                if (pipeline_id) {
+                                    campaignTextItems.push(`Pipeline ID: ${pipeline_id}`);
+                                }
+                            } else {
+                                // For non-CI plots, include campaign info
+                                if (campaign) {
+                                    campaignTextItems.push(`Campaign: ${campaign}`);
+                                }
+
+                                // Parse energy to a float and check if it's a valid number
+                                let sanitizedEnergy = energy ? energy.replace(/[^0-9.-]+/g, '') : null;
+                                let energyValue = sanitizedEnergy ? parseFloat(sanitizedEnergy) : null;
+
+                                if (!isNaN(energyValue)) {
+                                    campaignTextItems.push(`Energy: ${energy}`);
+                                }
+
+                                if (minQ2) {
+                                    campaignTextItems.push(`Min Q²: ${minQ2}`);
+                                }
+                            }
+
+                            // If there are any campaign info items, join them and set the innerHTML
+                            if (campaignTextItems.length > 0) {
+                                campaignInfo.innerHTML = campaignTextItems.join('<br>');
+                            }
+
+                            var downloadIcon = document.createElement("i");
+                            downloadIcon.className = "fas fa-download";
+                            downloadIcon.title = "Download Image";
+
+                            downloadIcon.addEventListener('click', function(event) {
+                                event.stopPropagation();
+                                event.preventDefault(); // Prevent default action
+                            
+                                var img = cardDiv.querySelector('img');
+                            
+                                // Check if the image is loaded
+                                if (img.complete && img.naturalHeight !== 0) {
+                                    // Proceed with download
+                                    downloadCardAsPNG(cardDiv, downloadIcon);
+                                } else {
+                                    // Wait for the image to load
+                                    img.addEventListener('load', function onImageLoad() {
+                                        // Remove the event listener to prevent multiple triggers
+                                        img.removeEventListener('load', onImageLoad);
+                                        downloadCardAsPNG(cardDiv, downloadIcon);
+                                    });
+                                }
+                            }, { once: true });
+
+                            // Create a link for the download icon
+                            var downloadLink = document.createElement("a");
+                            downloadLink.href = plot.ImagePath + plot.PlotTypeName + ".png";
+                            downloadLink.download = plot.PlotTypeName + ".png"; // Set the download attribute with file name
+                            downloadLink.appendChild(downloadIcon);
+
+                            cardTextContainer.appendChild(campaignInfo);
+                            cardTextContainer.appendChild(downloadLink);
+
+                            cardDiv.appendChild(link);
+                            link.appendChild(img);
+                            cardBodyDiv.appendChild(cardTextContainer);
+                            cardDiv.appendChild(cardBodyDiv);
+                            colDiv.appendChild(cardDiv);
+
+                            return { minQ2: parseFloat(minQ2) || 0, element: colDiv }; // Return object with minQ2 and the DOM element
+                        }
+                        return null;
+                    }).filter(item => item !== null);
+
+                    // Now sort results and display them
+                    results.sort((a, b) => a.minQ2 - b.minQ2); // Sort results by minQ2
+
+                    if (results.length > 0) {
+                        // Append the header and subheader if not already appended
+                        if (!headerAppended) {
+                            // Create a container for header and subheader
+                            var headerContainer = document.createElement("div");
+                            headerContainer.appendChild(header);
+                            if (subHeader) {
+                                headerContainer.appendChild(subHeader);
+                            }
+                            imageGallery.appendChild(headerContainer);
+                            headerAppended = true;
+                        }
+
+                        results.forEach(result => {
+                            if (result && result.element) {
+                                cardDeckDiv.appendChild(result.element); // Append sorted elements
+                            }
+                        });
+                        imageGallery.appendChild(cardDeckDiv);
+                    }
+                    updateImageCount();
+                })
+                .catch(error => {
+                    console.error('Error fetching data for plotType:', plotType, error);
+                });
+        });
     }
+
 
     function populateSubmenus() {
         var xmlhttp;
@@ -739,7 +891,6 @@
 
                 // Loop over each supergroup in the response
                 Object.keys(response).forEach(function (superGroupName) {
-                    console.log('superGroupName: ', superGroupName)
                     //skip superGroupName that do not equal Physics or Detector
                     if (superGroupName !== "Physics" && superGroupName !== "Detector") {
                         return;
@@ -765,11 +916,11 @@
                                 link.style.opacity = "0.5"; // Optional: make it look disabled
                             }
 
-                            if (superGroupName === "Detector" && item.name !=="Material Scan" && item.name !=="Barrel Imaging Calorimeter"){
+                            if (superGroupName === "Detector" && item.name !== "Material Scan" && item.name !== "Barrel Imaging Calorimeter") {
                                 link.classList.add("disabled");
                                 link.setAttribute("aria-disabled", "true");
                                 link.style.pointerEvents = "none"; // Disable clicking
-                                link.style.opacity = "0.5"; 
+                                link.style.opacity = "0.5";
                             }
                             menu.appendChild(link);
                         });
@@ -841,11 +992,11 @@
     }
 
     function loadOriginalContent(plotGroup) {
-        const content = `<div class="container-fluid" style="padding-left: 0; padding-right: 0;">
+        const content = `<div class="container-fluid">
     <div class="row">
-            <div class="col-12 col-md-4 mb-3" id="sidebar"></div>
+            <div class="col-12 col-md-2 mb-3" id="sidebar"></div>
  
-        <div class="col-12 col-md-8">
+        <div class="col-12 col-md-10 mb-3" id="mainContent">
             <div class="row mb-3 align-items-center" id="galleryInfo">
                 <div class="col-12 col-md-4">
                     <span id="imageCount">Count Images</span>
@@ -877,91 +1028,85 @@
         xmlhttp.onreadystatechange = function () {
             if (this.readyState == 4 && this.status == 200) {
                 var response = JSON.parse(this.responseText);
-    
-                // Define the container where dropdowns will be added
                 const sidebar = document.getElementById('sidebar');
                 sidebar.innerHTML = ''; // Clear existing content in the sidebar
     
                 // Process each key in the response to create dropdowns with data
                 Object.keys(response).forEach(function (key) {
-                    console.log('found keys: ', key);
                     if (response[key].length > 0) { // Only create dropdowns if there are options available
-                        // Create label for the dropdown
-                        //remove spaces in key if they exist
-                        var sanitizedKey = key.replace(/\s+/g, '');
                         var label = document.createElement('label');
-                        label.setAttribute('for', sanitizedKey + 'Select');
-                        console.log('label: ', label)
+                        label.setAttribute('for', key + 'Select');
                         label.className = 'form-label';
                         label.textContent = key === 'PlotTypes' ? 'Plot Type' : key;
     
-                        // Create select element
                         var select = document.createElement('select');
-                        select.id = key.replace(/\s+/g, '') + 'Select'; // Remove spaces for ID
+                        select.id = key + 'Select';
                         select.className = 'form-select';
                         select.multiple = true;
     
+                        // Sort Pipeline options if the key is "Pipeline"
+                        let options = response[key];
+                        if (key === "Pipeline") {
+                            options = options
+                                .map(item => parseInt(item)) // Convert Pipeline IDs to integers
+                                .sort((a, b) => a - b) // Sort in ascending order
+                                .map(item => item.toString()); // Convert back to strings
+                        }
     
                         // Append options to the select element
-                        response[key].forEach(function (item) {
+                        options.forEach(function (item) {
                             var option = document.createElement('option');
-                            if (typeof item === 'object' && item !== null) {
-                                option.value = item.Name; // Assuming you still want to use Name as the value
-                                option.textContent = item.Description ? item.Description : item.Name;
+    
+                            if (key === 'PlotTypes') {
+                                option.value = item.Name;
+                                option.textContent = item.DisplayName || item.Description || item.Name;
                             } else {
                                 option.value = item;
                                 option.textContent = item;
                             }
+    
                             select.appendChild(option);
                         });
     
-                        // If the current select is the PlotTypesSelect, add an "All" option
                         if (select.id === "PlotTypesSelect") {
                             var allOption = document.createElement('option');
                             allOption.value = "all";
                             allOption.textContent = "All";
                             allOption.selected = true;
                             select.prepend(allOption);
-
                         }
     
-                        // Create button for collapsible functionality
                         var button = document.createElement('button');
                         button.className = 'btn btn-toggle w-100 text-start align-items-center justify-content-between d-flex';
                         button.type = 'button';
                         button.setAttribute('data-bs-toggle', 'collapse');
-                        button.setAttribute('data-bs-target', '#filter' + key.replace(/\s+/g, ''));
+                        button.setAttribute('data-bs-target', '#filter' + key);
                         button.setAttribute('aria-expanded', 'false');
-                        button.setAttribute('aria-controls', 'filter' + key.replace(/\s+/g, ''));
-                        button.innerHTML = `${key === 'PlotTypes' ? 'Plot Type' : key} <span id="filter${key.replace(/\s+/g, '')}-icon">+</span>`;
-        
-                        // Create div for collapsible content
+                        button.setAttribute('aria-controls', 'filter' + key);
+                        button.innerHTML = `${key === 'PlotTypes' ? 'Plot Type' : key} <span id="filter${key}-icon">+</span>`;
+    
                         var collapseDiv = document.createElement('div');
                         collapseDiv.className = 'collapse';
-                        collapseDiv.id = 'filter' + key.replace(/\s+/g, '');
+                        collapseDiv.id = 'filter' + key;
                         collapseDiv.appendChild(select);
-        
-                        // Add event listener to toggle icon
+    
                         button.addEventListener('click', function () {
                             var icon = button.querySelector('span');
                             icon.textContent = icon.textContent === '+' ? '-' : '+';
                         });
     
-                        // Set Campaign and Plot Type dropdowns to be open by default
-                        if (key === 'Campaign' || key === 'PlotTypes') {
+                        if (key === 'Campaign' || key === 'PlotTypes' || key === 'Pipeline') {
                             collapseDiv.classList.add('show');
                             button.setAttribute('aria-expanded', 'true');
                             var icon = button.querySelector('span');
                             icon.textContent = '-';
                         }
     
-                        // Add label, button, and collapsible div to the sidebar
                         sidebar.appendChild(button);
                         sidebar.appendChild(collapseDiv);
     
                         if (select.id === "CampaignSelect") {
                             if (plotGroup === '28') {
-                                // Set "24.04.0" as the default selection if it exists
                                 Array.from(select.options).forEach(option => {
                                     if (option.value === "24.04.0") {
                                         option.selected = true;
@@ -971,19 +1116,15 @@
                                 select.lastElementChild.selected = true;
                             }
                         }
-
-
     
-    
-                    } else {
-                        console.log(`No items found for ${key}`);
+                        if (select.id === "PipelineSelect") {
+                            // Select the latest (highest) Pipeline ID by default
+                            select.lastElementChild.selected = true;
+                        }
                     }
                 });
     
-                // Set onchange events for the dropdowns
                 setOnChangeEvents();
-    
-                // Trigger change event to ensure any default selections are handled
                 updateImageGallery();
             }
         };
@@ -998,7 +1139,7 @@
         var energySelect = document.getElementById("BeamEnergySelect");
         var minQ2Select = document.getElementById("MinQ2Select");
         var particleTypeSelect = document.getElementById("ParticleTypeSelect");
-        
+        var pipelineSelect = document.getElementById("PipelineSelect");
 
         if (campaignSelect) {
             campaignSelect.onchange = updateImageGallery;
@@ -1019,36 +1160,49 @@
         if (particleTypeSelect) {
             particleTypeSelect.onchange = updateImageGallery;
         }
+
+
+        if (pipelineSelect) {
+            pipelineSelect.onchange = updateImageGallery;
+        }
     }
 
     function downloadCardAsPNG(cardElement, buttonElement) {
-        // Find the image within the card and access its 'alt' attribute
+        // Find the image within the card
         let imageElement = cardElement.querySelector('img.card-img-top');
         let imageName = imageElement && imageElement.alt ? imageElement.alt.trim().replace(/ /g, '_') : 'default_card_image';
-
-        // Temporarily hide the button
-
-        // Capture the card
-        html2canvas(cardElement, {
-            scale: 3,
-            onclone: function (clonedDoc) {
-                let clonedButton = clonedDoc.querySelector('.fa-download');
-                if (clonedButton) {
-                    clonedButton.style.visibility = 'hidden';
+    
+        // Check if the image is loaded
+        if (!imageElement.complete || imageElement.naturalHeight === 0) {
+            // Wait for the image to load before proceeding
+            imageElement.addEventListener('load', function onImageLoad() {
+                imageElement.removeEventListener('load', onImageLoad);
+                proceedWithDownload();
+            });
+        } else {
+            proceedWithDownload();
+        }
+    
+        function proceedWithDownload() {
+            // Capture the card
+            html2canvas(cardElement, {
+                scale: 3,
+                onclone: function(clonedDoc) {
+                    let clonedButton = clonedDoc.querySelector('.fa-download');
+                    if (clonedButton) {
+                        clonedButton.style.visibility = 'hidden';
+                    }
                 }
-            }
-        }).then(function (canvas) {
-            // Restore the button's visibility
-            buttonElement.style.visibility = 'visible';
-
-            var image = canvas.toDataURL("image/png");
-            var link = document.createElement('a');
-            link.href = image;
-            link.download = `${imageName}.png`; // Use the 'alt' text as part of the file name
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        });
+            }).then(function(canvas) {
+                var image = canvas.toDataURL("image/png");
+                var link = document.createElement('a');
+                link.href = image;
+                link.download = `${imageName}.png`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            });
+        }
     }
 
     function filterPlotTypeOptions() {
@@ -1066,67 +1220,6 @@
             }
         }
     }
-
-    document.getElementById('contactForm').addEventListener('submit', function (event) {
-        event.preventDefault(); // Prevent the default form submission behavior
-
-        // Gather the form data
-        let formData = new FormData(this);
-
-        // Perform the fetch/AJAX call to send data to the server
-        fetch('./php/contact.php', {
-            method: 'POST',
-            body: formData
-        })
-            .then(response => response.text()) // Convert response to text
-            .then(text => {
-                // Display the server's response text on the page
-                if (text.includes('Thank You!')) {
-                    alert('Thank you for contacting us! Your message has been sent.');
-                } else {
-                    alert('Oops! Something went wrong.');
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('Error sending message.');
-            });
-    });
-
-    document.getElementById('addPlotForm').addEventListener('submit', function (event) {
-        event.preventDefault(); // Prevent the default form submission behavior
-
-        // Gather the form data
-        let formData = new FormData(this);
-
-        // Perform the fetch/AJAX call to send data to the server
-        fetch('./php/addPlotForm.php', {
-            method: 'POST',
-            body: formData
-        })
-            .then(response => response.text()) // Convert response to text
-            .then(text => {
-                // Display the server's response text on the page
-                alert(text)
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('Error submitting plot type.');
-            });
-    });
-
-    document.getElementById('contactForm').addEventListener('submit', function (event) {
-        if (!this.checkValidity()) {
-            event.preventDefault(); // Prevent form submission
-            alert('Please fill out all required fields.');
-        }
-    });
-
-    document.getElementById('contactLink').addEventListener('click', function (event) {
-        event.preventDefault();
-        document.getElementById('modal').style.display = 'block';
-        document.querySelectorAll('.tablink')[0].click(); // Open the first tab by default
-    });
 
     window.onclick = function (event) {
         if (event.target == document.getElementById('modal')) {
@@ -1147,4 +1240,13 @@
         document.getElementById(formName).style.display = "block";
         evt.currentTarget.className += " active";
     }
+
+    document.getElementById('ciLink').addEventListener('click', function (event) {
+        event.preventDefault();
+
+        populateSidebar('38');
+        loadOriginalContent('38');
+        updateImageGallery();
+
+    });
 </script>
