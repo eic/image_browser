@@ -1051,6 +1051,8 @@
                                 .map(item => parseInt(item)) // Convert Pipeline IDs to integers
                                 .sort((a, b) => a - b) // Sort in ascending order
                                 .map(item => item.toString()); // Convert back to strings
+                        } else if (key === "PlotTypes") {
+                            options = options.sort((a, b) => a.Name.localeCompare(b.Name)); // Sort PlotTypes alphabetically by Name
                         }
     
                         // Append options to the select element
