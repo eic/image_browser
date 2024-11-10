@@ -46,21 +46,52 @@ $stmt->execute();
 $result = $stmt->get_result();
 
 
+// Check if result is empty
 $plotGroups = [];
-while ($row = $result->fetch_assoc()) {
-    $plotGroupName = $row['PlotGroupName'];
-    $subPlotGroupName = $row['SubPlotGroupName'];
+if ($result->num_rows > 0) {
+    while ($row = $result->fetch_assoc()) {
+        $plotGroupName = $row['PlotGroupName'];
+        $subPlotGroupName = $row['SubPlotGroupName'];
 
-    if (!isset($plotGroups[$plotGroupName])) {
-        $plotGroups[$plotGroupName] = [];
+        if (!isset($plotGroups[$plotGroupName])) {
+            $plotGroups[$plotGroupName] = [];
+        }
+
+        $plotGroups[$plotGroupName][] = $subPlotGroupName;
+    }
+} else {
+    // If no result, fetch from PlotType_Groupings where superPlotGroup_ID = PlotGroup_ID
+    $groupingStmt = $conn->prepare("
+        SELECT PlotType_Groupings.PlotGroup_ID, Plot_Types.Name, Plot_Types.Description, Plot_Types.DisplayName
+        FROM PlotType_Groupings
+        INNER JOIN Plot_Types ON PlotType_Groupings.PlotType_ID = Plot_Types.ID
+        WHERE PlotType_Groupings.PlotGroup_ID = ?
+    ");
+    $groupingStmt->bind_param("i", $superPlotGroup_ID);
+    $groupingStmt->execute();
+    $groupingResult = $groupingStmt->get_result();
+
+    while ($groupingRow = $groupingResult->fetch_assoc()) {
+        $plotGroupID = $groupingRow['PlotGroup_ID'];
+        $plotTypeName = $groupingRow['Name'];
+        $plotTypeDescription = $groupingRow['Description'];
+        $plotTypeDisplayName = $groupingRow['DisplayName'];
+
+        if (!isset($plotGroups[$plotGroupID])) {
+            $plotGroups[$plotGroupID] = [];
+        }
+
+        $plotGroups['PlotTypes'][] = ['Name' => $plotTypeName, 'Description' => $plotTypeDescription, 'DisplayName' => $plotTypeDisplayName['DisplayName']];
     }
 
-    $plotGroups[$plotGroupName][] = $subPlotGroupName;
+    $groupingResult->free();
+    $groupingStmt->close();
 }
+
 
 // Second query to fetch PlotType_IDs and names
 $plotTypeStmt = $conn->prepare("
-    SELECT Plot_Types.ID, Plot_Types.Name, Plot_Types.Description 
+    SELECT Plot_Types.ID, Plot_Types.Name, Plot_Types.Description, Plot_Types.DisplayName 
     FROM Plot_Types 
     INNER JOIN PlotType_Groupings ON Plot_Types.ID = PlotType_Groupings.PlotType_ID 
     WHERE PlotType_Groupings.PlotGroup_ID = ?
@@ -73,16 +104,16 @@ $plotTypes = [];
 while ($typeRow = $plotTypeResult->fetch_assoc()) {
     $plotTypes[] = [
         'Name' => $typeRow['Name'],
-        'Description' => $typeRow['Description']
+        'Description' => $typeRow['Description'],
+        'DisplayName' => $typeRow['DisplayName']
     ];
 }
 
 $data = [];
 foreach ($plotGroups as $key => $value) {
     $data[$key] = $value;
-    if ($key == 'Campaign') {
-        $data['PlotTypes'] = $plotTypes;
-    }
+    $data['PlotTypes'] = $plotTypes;
+
 }
 
 header('Content-Type: application/json');

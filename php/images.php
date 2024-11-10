@@ -21,13 +21,14 @@ if (!$conn) {
 
 // pass the plot name as a url parameter, allow list of plot names
 $plotName = $_GET['plotName'];
+$IsChunked = isset($_GET['IsChunked']) ? (int) $_GET['IsChunked'] : 0;
 $plotNames = explode(",", $plotName);
 $plotNames = array_map('trim', $plotNames);
 
 // Prepare the query to get plot information
 $plotNamesPlaceholders = implode(',', array_fill(0, count($plotNames), '?'));
 $query = "
-    SELECT Plots.*, Plot_Types.Name AS PlotTypeName, Plot_Types.Description AS Description
+    SELECT Plots.*, Plot_Types.Name AS PlotTypeName, Plot_Types.Description AS Description, Plot_Types.DisplayName AS DisplayName
     FROM Plots
     JOIN Plot_Types ON Plots.Plot_Types_ID = Plot_Types.ID
     WHERE Plot_Types.Name IN ($plotNamesPlaceholders) and Plot_Types.IsChunked= ?
@@ -58,7 +59,8 @@ while ($row = mysqli_fetch_assoc($result)) {
         'PlotTypeID' => $row['Plot_Types_ID'],
         'ImagePath' => $row['RunPeriod'],
         'PlotTypeName' => $row['PlotTypeName'],
-        'Description' => $row['Description']
+        'Description' => $row['Description'],
+        'DisplayName' => $row['DisplayName']
     ];
     $plots[] = $plot;
 }
